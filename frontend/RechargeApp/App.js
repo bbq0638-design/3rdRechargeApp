@@ -1,8 +1,32 @@
-import React from 'react';
-import ButtonTest from './screens/ButtonTest'; // 경로만 맞춰주면 돼요!
+import React, {useState} from 'react';
+import {NavigationContainer} from '@react-navigation/native';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
-const App = () => {
-  return <ButtonTest />;
-};
+import BottomNavigation from './components/layout/BottomNavigation';
+// 필요 시 로그인/회원가입 페이지 추가
+// import LoginScreen from './screens/LoginScreen';
+// import SignupScreen from './screens/SignupScreen';
 
-export default App;
+const Stack = createNativeStackNavigator();
+
+export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false, // ❗ 최상단에서는 헤더 절대 X
+        }}>
+        {/* 🔥 앱 기본 화면(하단 탭 네비게이션) */}
+        <Stack.Screen name="MainTabs">
+          {() => <BottomNavigation isLoggedIn={isLoggedIn} />}
+        </Stack.Screen>
+
+        {/* 🔥 로그인 / 회원가입 같이 헤더 없는 화면들 */}
+        {/* <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Signup" component={SignupScreen} /> */}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}

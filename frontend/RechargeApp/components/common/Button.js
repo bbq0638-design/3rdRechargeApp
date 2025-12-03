@@ -8,6 +8,7 @@ const COLORS = {
   borderGray: '#D1D5DB',
   pressGray: '#ecedefff',
   pressRed: '#CC4A4A',
+  shadow: '#000',
 };
 
 const typeStyles = {
@@ -43,8 +44,8 @@ const typeStyles = {
     bg: COLORS.background,
     pressedBg: COLORS.pressRed,
     border: COLORS.borderGray,
-    textColor: COLORS.pressRed, // 기본 빨강 텍스트
-    pressedTextColor: '#FFFFFF', // 눌리면 흰색
+    textColor: COLORS.pressRed,
+    pressedTextColor: '#FFFFFF',
   },
   cancel: {
     bg: COLORS.background,
@@ -57,8 +58,8 @@ const typeStyles = {
     bg: '#FFFFFF',
     pressedBg: COLORS.primary,
     border: COLORS.borderGray,
-    textColor: '#000000', // 기본 검정
-    pressedTextColor: '#FFFFFF', // 눌리면 흰색
+    textColor: '#000000',
+    pressedTextColor: '#FFFFFF',
   },
 };
 
@@ -71,6 +72,7 @@ const Button = ({
   disabled = false,
   style,
   textStyle,
+  borderRadius = 10,
 }) => {
   const [pressed, setPressed] = useState(false);
 
@@ -88,11 +90,16 @@ const Button = ({
         {
           width,
           height,
+          borderRadius,
           backgroundColor: pressed ? current.pressedBg : current.bg,
           borderColor: current.border ?? 'transparent',
           borderWidth: current.border ? 1 : 0,
           opacity: disabled ? 0.5 : 1,
         },
+
+        // 🔥 SelectableButton과 완전히 동일한 그림자 세트
+        styles.shadow,
+
         style,
       ]}>
       <Text
@@ -109,13 +116,21 @@ const Button = ({
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
+
+  // 🔥 그림자 완벽 동일 적용 (SelectableButton shadow 복붙)
+  shadow: {
+    shadowColor: COLORS.shadow,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+
   text: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
 });
