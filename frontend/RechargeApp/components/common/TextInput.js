@@ -1,11 +1,5 @@
 import React, {useState, forwardRef} from 'react';
-import {
-  View,
-  Text,
-  TextInput as RNTextInput,
-  StyleSheet,
-  Platform,
-} from 'react-native';
+import {View, Text, TextInput as RNTextInput, StyleSheet, Platform} from 'react-native';
 
 const COLORS = {
   primary: '#004E89',
@@ -84,7 +78,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     paddingVertical: Platform.OS === 'ios' ? 12 : 10,
     // IOS
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,

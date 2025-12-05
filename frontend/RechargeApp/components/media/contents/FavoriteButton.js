@@ -7,22 +7,64 @@ const COLORS = {
   primaryDark: '#003766',
   yellow: '#F4C10F',
   text: '#000',
-  shadow: '#000',
   border: '#D1D5DB',
+  white: '#FFFFFF',
+  shadow: '#000',
 };
 
-export default function FavoriteButton({isFavorite, onPress, style}) {
+export default function FavoriteButton({
+  type = 'default', // default | square | overlaySmall
+  isFavorite,
+  onPress,
+  style,
+}) {
   const [pressed, setPressed] = useState(false);
 
+  // 플레이리스트용 버전
+  if (type === 'square') {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.8}
+        style={[
+          styles.squareBox,
+          {backgroundColor: isFavorite ? COLORS.primary : COLORS.white},
+          style,
+        ]}>
+        <MaterialCommunityIcons
+          name={isFavorite ? 'star' : 'star-outline'}
+          size={20}
+          color={isFavorite ? COLORS.yellow : COLORS.primary}
+        />
+      </TouchableOpacity>
+    );
+  }
+  // 앨범아트 즐겨찾기 버튼용
+  if (type === 'overlaySmall') {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        style={[styles.overlayBtn, style]}
+        hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
+        <MaterialCommunityIcons
+          name={isFavorite ? 'star' : 'star'}
+          size={28}
+          color={isFavorite ? COLORS.yellow : COLORS.white}
+        />
+      </TouchableOpacity>
+    );
+  }
+
+  // 영화 상세글용
   const bgColor = pressed
     ? isFavorite
       ? COLORS.primaryDark
       : COLORS.border
     : isFavorite
     ? COLORS.primary
-    : '#FFFFFF';
+    : COLORS.white;
 
-  const textColor = isFavorite ? COLORS.border : COLORS.text;
+  const textColor = isFavorite ? COLORS.white : COLORS.text;
   const iconColor = isFavorite ? COLORS.yellow : COLORS.primary;
 
   return (
@@ -31,15 +73,7 @@ export default function FavoriteButton({isFavorite, onPress, style}) {
       onPress={onPress}
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}
-      style={[
-        styles.button,
-        {
-          backgroundColor: bgColor,
-          borderColor: isFavorite ? COLORS.primary : COLORS.primary,
-          borderWidth: 1,
-        },
-        style,
-      ]}>
+      style={[styles.defaultButton, {backgroundColor: bgColor}, style]}>
       <View style={styles.row}>
         <MaterialCommunityIcons
           name={isFavorite ? 'star' : 'star-outline'}
@@ -55,27 +89,48 @@ export default function FavoriteButton({isFavorite, onPress, style}) {
 }
 
 const styles = StyleSheet.create({
-  button: {
+  /** default (기존) */
+  defaultButton: {
     height: 40,
     paddingHorizontal: 14,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.primary,
 
-    // Button.js shadow 그대로
     shadowColor: COLORS.shadow,
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
   },
+  label: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  label: {
-    fontSize: 15,
-    fontWeight: '600',
+
+  /** square */
+  squareBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  /** overlaySmall */
+  overlayBtn: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    padding: 4,
   },
 });

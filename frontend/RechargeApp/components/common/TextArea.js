@@ -1,6 +1,6 @@
 // components/common/TextArea.js
-import React, {useState} from 'react';
-import {TextInput, View, Text, StyleSheet} from 'react-native';
+import React, { useState } from 'react';
+import { TextInput, View, Text, StyleSheet } from 'react-native';
 
 const COLORS = {
   border: '#D1D5DB',
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
 
     // IOS
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,

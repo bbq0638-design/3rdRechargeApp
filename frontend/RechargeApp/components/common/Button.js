@@ -1,5 +1,5 @@
-import React, {useState} from 'react';
-import {TouchableOpacity, Text, StyleSheet} from 'react-native';
+import React, { useState } from 'react';
+import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 
 const COLORS = {
   primary: '#004E89',
@@ -11,7 +11,7 @@ const COLORS = {
   shadow: '#000',
 };
 
-const typeStyles = {
+const typeStyles = { 
   submit: {
     bg: COLORS.primary,
     pressedBg: COLORS.primaryDark,
@@ -101,13 +101,15 @@ const Button = ({
         styles.shadow,
 
         style,
-      ]}>
+      ]}
+    >
       <Text
         style={[
           styles.text,
-          {color: pressed ? current.pressedTextColor : current.textColor},
+          { color: pressed ? current.pressedTextColor : current.textColor },
           textStyle,
-        ]}>
+        ]}
+      >
         {text}
       </Text>
     </TouchableOpacity>
@@ -123,7 +125,7 @@ const styles = StyleSheet.create({
   // 🔥 그림자 완벽 동일 적용 (SelectableButton shadow 복붙)
   shadow: {
     shadowColor: COLORS.shadow,
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,

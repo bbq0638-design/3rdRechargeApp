@@ -1,7 +1,7 @@
 import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 
-function UserRecommendBox({reason, nickname, style}) {
+function UserRecommendBox({reason, nickname, style, onPressNickname}) {
   if (!reason) return null;
 
   return (
@@ -10,27 +10,31 @@ function UserRecommendBox({reason, nickname, style}) {
       <Text style={styles.text}>{reason}</Text>
 
       {nickname && (
-        <Text style={styles.by}>
-          Recommended by <Text style={styles.name}>{nickname}</Text>
-        </Text>
+        <View style={styles.byRow}>
+          <Text style={styles.by}>Recommended by </Text>
+          <TouchableOpacity onPress={onPressNickname}>
+            <Text style={styles.name}>{nickname}</Text>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  box: {
-    padding: 14,
-    marginBottom: 20,
-  },
+  box: {},
   title: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '700',
     color: '#222',
-    marginBottom: 8,
+    marginBottom: 10,
+  },
+  byRow: {
+    flexDirection: 'row',
+    alignItems: 'center', // ★ baseline 맞추는 핵심!
   },
   text: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#444',
     lineHeight: 20,
     marginBottom: 10,

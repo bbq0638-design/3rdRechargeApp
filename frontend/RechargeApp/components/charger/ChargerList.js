@@ -3,7 +3,7 @@ import {View, Text, StyleSheet, ScrollView} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import ChargerItem from './ChargerItem';
 
-export default function ChargerList({data = [], count = 0}) {
+export default function ChargerList({data = [], count = 0, onPressItem}) {
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -19,7 +19,13 @@ export default function ChargerList({data = [], count = 0}) {
           contentContainerStyle={{paddingBottom: 30, flexGrow: 1}}
           showsVerticalScrollIndicator={false}>
           {data.length > 0 ? (
-            data.map((item, index) => <ChargerItem key={index} {...item} />)
+            data.map((item, index) => (
+              <ChargerItem
+                key={index}
+                {...item}
+                onPress={() => onPressItem(item)}
+              />
+            ))
           ) : (
             <Text style={styles.placeholder}>충전소 정보를 불러오는 중...</Text>
           )}

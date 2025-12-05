@@ -1,14 +1,70 @@
 import React from 'react';
 import {View, Text, Image, StyleSheet, TouchableOpacity} from 'react-native';
 
-const MediaCards = ({title, author, image, onPress, variant}) => {
+import FavoriteButton from '../contents/FavoriteButton';
+import IconButton from '../../common/iconButton';
+
+const MediaCards = ({
+  title,
+  author,
+  image,
+  onPress,
+  variant,
+  isFavorite = false,
+  onFavoriteToggle,
+  onPreview,
+  style,
+}) => {
+  if (variant === 'musicChart') {
+    return (
+      <View style={[styles.card, styles.chartCard, style]}>
+        {/* 앨범아트 + 즐겨찾기 */}
+        <View style={styles.imageWrapper}>
+          <Image source={{uri: image}} style={styles.chartImage} />
+
+          <View style={styles.favoriteWrapper}>
+            <FavoriteButton
+              type="overlaySmall"
+              isFavorite={isFavorite}
+              onPress={onFavoriteToggle}
+            />
+          </View>
+        </View>
+
+        {/* 2열 구조 */}
+        <View style={styles.rowWrapper}>
+          {/* 왼쪽: 제목 + 가수 (2행) */}
+          <View style={styles.leftColumn}>
+            <Text style={styles.titleText} numberOfLines={1}>
+              {title}
+            </Text>
+            <Text style={styles.artistText} numberOfLines={1}>
+              {author}
+            </Text>
+          </View>
+
+          {/* 오른쪽: 미리듣기 아이콘 (1행+2행 전체 중앙에 위치) */}
+          <View style={styles.rightColumn}>
+            <IconButton
+              type="play"
+              size={26}
+              color="#004E89"
+              onPress={onPreview}
+            />
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <TouchableOpacity
       onPress={onPress}
-      onStartShouldSetResponder={() => true} // ⭐ 스크롤보다 터치를 우선!
+      activeOpacity={0.8}
       style={[
         styles.card,
         variant === 'music' ? styles.musicCard : styles.movieCard,
+        style,
       ]}>
       {/* 포스터 */}
       <Image
@@ -35,16 +91,20 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: 10,
   },
+
+  /* --- 기존 영화 카드 --- */
   movieCard: {
-    width: 160,
+    width: 140,
   },
   movieImage: {
-    width: 160,
-    height: 220,
+    width: 140,
+    height: 200,
     borderRadius: 16,
     marginBottom: 8,
     backgroundColor: '#e3e3e3',
   },
+
+  /* --- 기존 음악 카드 --- */
   musicCard: {
     width: 140,
   },
@@ -55,6 +115,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     backgroundColor: '#e3e3e3',
   },
+
   title: {
     fontSize: 16,
     fontWeight: '600',
@@ -64,6 +125,63 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#777',
     marginTop: 2,
+  },
+
+  /* --- 새로운 음악 차트 카드 --- */
+  chartCard: {
+    width: 140,
+  },
+
+  // 앨범아트
+  imageWrapper: {
+    position: 'relative',
+    marginBottom: 10,
+  },
+
+  chartImage: {
+    width: 140,
+    height: 140,
+    borderRadius: 14,
+    backgroundColor: '#e3e3e3',
+  },
+
+  // 즐겨찾기 버튼 (우측 상단)
+  favoriteWrapper: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    zIndex: 10,
+  },
+
+  // 아래 텍스트 + 아이콘 2열 구조
+  rowWrapper: {
+    flexDirection: 'row',
+    marginTop: 6,
+  },
+
+  leftColumn: {
+    flex: 1,
+    flexDirection: 'column',
+  },
+
+  rightColumn: {
+    width: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // 제목
+  titleText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111',
+    marginBottom: 2,
+  },
+
+  // 가수
+  artistText: {
+    fontSize: 13,
+    color: '#666',
   },
 });
 

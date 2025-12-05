@@ -197,7 +197,7 @@ function CommentSection() {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 20,
+    
   },
 
   commentHead: {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {ScrollView, StyleSheet, View, Text} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import MediaHomeContentCard from '../../../components/media/cards/MediaHeroContentCard';
@@ -6,6 +6,7 @@ import AiRecommendSection from '../../../components/media/cards/AiRecommendCard'
 import Button from '../../../components/common/Button';
 import GenreSelector from '../../../components/media/cards/GenreSelector';
 import MediaListSection from '../../../components/media/lists/MediaListsSection';
+import AiRecommendModal from '../../../components/media/contents/AiRecommendModal';
 
 const TMDB_GENRES = [
   {id: 'ALL', name: '전체'},
@@ -32,6 +33,7 @@ const TMDB_GENRES = [
 
 function FindMovieScreen() {
   const navigation = useNavigation();
+  const [showAiModal, setShowAiModal] = useState(false);
 
   // 프론트 예시 영화
   const dummyMovies = [
@@ -69,55 +71,71 @@ function FindMovieScreen() {
   ];
 
   return (
-    <ScrollView style={styles.container}>
-      <MediaHomeContentCard
-        title="곧 개봉할 영화"
-        subtitle="곧 영화관에서 만나요!"
-        posters={[
-          'https://dummyimage.com/393x590/cccccc/000000&text=Poster+1',
-          'https://dummyimage.com/393x590/cccccc/000000&text=Poster+2',
-          'https://dummyimage.com/393x590/cccccc/000000&text=Poster+3',
-          'https://dummyimage.com/393x590/cccccc/000000&text=Poster+4',
-          'https://dummyimage.com/393x590/cccccc/000000&text=Poster=5',
-        ]}
-      />
-      {/* ai추천 섹션 */}
-      <AiRecommendSection />
-      {/* 장르 선택 */}
-      {/* 장르 선택 */}
-      <GenreSelector
-        genres={TMDB_GENRES}
-        onSelect={genre => {
-          console.log('선택된 장르:', genre);
+    <>
+      <ScrollView style={styles.container}>
+        <MediaHomeContentCard
+          title="곧 개봉할 영화"
+          subtitle="곧 영화관에서 만나요!"
+          posters={[
+            'https://dummyimage.com/393x590/cccccc/000000&text=Poster+1',
+            'https://dummyimage.com/393x590/cccccc/000000&text=Poster+2',
+            'https://dummyimage.com/393x590/cccccc/000000&text=Poster+3',
+            'https://dummyimage.com/393x590/cccccc/000000&text=Poster+4',
+            'https://dummyimage.com/393x590/cccccc/000000&text=Poster=5',
+          ]}
+        />
+        {/* ai추천 섹션 */}
+        <AiRecommendSection
+          title="영화 AI 추천 받기"
+          onPress={() => setShowAiModal(true)}
+        />
+
+        {/* 장르 선택 */}
+        <GenreSelector
+          genres={TMDB_GENRES}
+          onSelect={genre => {
+            console.log('선택된 장르:', genre);
+          }}
+        />
+
+        {/* 인기 추천 */}
+        <MediaListSection
+          title="인기영화"
+          items={dummyMovies}
+          variant="movie"
+          onPressItem={card =>
+            navigation.navigate('MovieDetail', {movieId: card.id, type: 'tmdb'})
+          }
+        />
+        {/*  이용자 추천 */}
+        <MediaListSection
+          title="이용자 추천영화"
+          items={userPosts}
+          variant="movie"
+          onPressItem={card =>
+            navigation.navigate('MovieDetail', {movieId: card.id, type: 'post'})
+          }
+        />
+
+        <View style={styles.bottomArea}>
+          <Button
+            type="submit"
+            text="영화 추천하러 가기"
+            height={50}
+            onPress={() => navigation.navigate('MoviePostScreen')}
+          />
+        </View>
+      </ScrollView>
+      {/* ai 모달 */}
+      <AiRecommendModal
+        visible={showAiModal}
+        onClose={() => setShowAiModal(false)}
+        contentType="movie" // 영화 모드
+        onResultPress={(item, type) => {
+          navigation.navigate('MovieDetail', {movieId: item.id});
         }}
       />
-
-      {/* 인기 추천 */}
-      <MediaListSection
-        title="인기영화"
-        items={dummyMovies}
-        variant="movie"
-        onPressItem={card =>
-          navigation.navigate('MovieDetail', {movieId: card.id})
-        }
-      />
-      {/*  이용자 추천 */}
-      <MediaListSection
-        title="이용자 추천영화"
-        items={userPosts}
-        variant="movie"
-        onPressItem={post => console.log('게시글 클릭:', post.id)}
-      />
-
-      <View style={styles.bottomArea}>
-        <Button
-          type="submit"
-          text="영화 추천하러 가기"
-          height={50}
-          onPress={() => navigation.navigate('MoviePostScreen')}
-        />
-      </View>
-    </ScrollView>
+    </>
   );
 }
 

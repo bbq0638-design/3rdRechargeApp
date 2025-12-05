@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.recharge.user.dao.UserDAO">
+
+    <!-- 회원가입 -->
+    <insert id="insertUser" parameterType="com.recharge.user.vo.UserVO">
+        INSERT INTO TB_USER (
+            USER_ID,
+            USER_PWD,
+            USER_EMAIL,
+            USER_NAME,
+            USER_NICKNAME,
+            USER_BIRTH,
+            USER_GENDER,
+            USER_PHONE,
+            USER_CARMODEL,
+            USER_ROLE,
+            DEVICE_OS,
+            DEVICE_VERSION,
+            FCM_TOKEN,
+            CREATE_DATE,
+            CREATE_ID,
+            UPDATED_DATE,
+            UPDATED_ID
+        ) VALUES (
+            #{userId},
+            #{userPwd},
+            #{userEmail},
+            #{userName},
+            #{userNickname},
+            #{userBirth},
+            #{userGender},
+            #{userPhone},
+            #{userCarModel},
+            #{userRole},
+            #{deviceOs},
+            #{deviceVersion},
+            #{fcmToken},
+            SYSDATE,
+            #{createId},
+            SYSDATE,
+            #{updatedId}
+        )
+    </insert>
+
+    <!-- 아이디 중복 체크 -->
+    <select id="checkUserId" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_USER
+        WHERE USER_ID = #{userId}
+    </select>
+
+    <!-- 닉네임 중복 체크 -->
+    <select id="checkUserNickName" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_USER
+        WHERE USER_NICKNAME = #{userNickname}
+    </select>
+</mapper>

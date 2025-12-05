@@ -11,6 +11,7 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Button from '../../common/Button';
 import IconButton from '../../common/iconButton';
+import UserPostActionBar from '../../common/UserPostActionBar';
 
 function MovieInfo({
   movie,
@@ -30,35 +31,16 @@ function MovieInfo({
       <View style={styles.titleRow}>
         {/* 제목 */}
         <Text style={styles.title}>{movie.title}</Text>
-        {/* 게시글 전용 버튼 */}
-        <View style={styles.actionRow}>
-          {isPost && (
-            <>
-              {isMine && (
-                <>
-                  <TouchableOpacity onPress={onEdit} style={styles.actionBtn}>
-                    <IconButton type="commentEdit" size={22} />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={onDelete} style={styles.actionBtn}>
-                    <IconButton type="commentDelete" size={22} />
-                  </TouchableOpacity>
-                </>
-              )}
-
-              {!isMine && isAdmin && (
-                <TouchableOpacity onPress={onDelete}>
-                  <IconButton type="commentDelete" size={22} />
-                </TouchableOpacity>
-              )}
-
-              {!isMine && !isAdmin && (
-                <TouchableOpacity onPress={onReport}>
-                  <IconButton type="report" size={22} />
-                </TouchableOpacity>
-              )}
-            </>
-          )}
-        </View>
+        {/* 게시글 액션 버튼 */}
+        <UserPostActionBar
+          isPost={isPost}
+          isMine={isMine}
+          isAdmin={isAdmin}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onReport={onReport}
+          style={styles.actionRow}
+        />
       </View>
 
       {/* 포스터 + 오른쪽 정보 */}

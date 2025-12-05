@@ -1,102 +1,129 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import IconButton from '../../components/common/iconButton';
+import React from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { View, Text, StyleSheet } from 'react-native';
 
-export default function IconButtonTest() {
-  const [liked, setLiked] = useState(false);
+// 실제 연결할 페이지들이 아직 없다면 임시 컴포넌트(Placeholder)를 사용합니다.
+// 나중에 실제 페이지 파일(ChargeScreen.js 등)을 import해서 교체하세요.
+const ChargeScreen = () => <View style={styles.screen}><Text>충전소 찾기</Text></View>;
+const MovieScreen = () => <View style={styles.screen}><Text>영화 추천</Text></View>;
+const MusicScreen = () => <View style={styles.screen}><Text>음악 추천</Text></View>;
+const FortuneScreen = () => <View style={styles.screen}><Text>오늘의 운세</Text></View>;
+const BoardScreen = () => <View style={styles.screen}><Text>게시판</Text></View>;
+const MyPageScreen = () => <View style={styles.screen}><Text>마이페이지</Text></View>;
 
+const Tab = createBottomTabNavigator();
+
+// 공통 컴포넌트에서 추출한 컬러 및 아이콘 설정
+const COLORS = {
+  primary: '#004E89', // 선택된 탭 색상 (Button.js 참조)
+  inactive: '#9CA3AF', // 비활성 탭 색상
+  background: '#ffffff',
+};
+
+export default function BottomNavigation() {
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>IconButton Test</Text>
+    <Tab.Navigator
+      initialRouteName="Charge"
+      screenOptions={{
+        headerShown: false, // 상단 헤더 숨김 (필요 시 true)
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.inactive,
+        tabBarStyle: {
+          height: 65, // 탭 바 높이 약간 확보
+          paddingTop: 10,
+          paddingBottom: 10,
+          backgroundColor: COLORS.background,
+          borderTopColor: '#E5E7EB', // 연한 회색 테두리
+          borderTopWidth: 1,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11, // 탭이 6개라 글자가 겹치지 않게 크기 조정
+          marginTop: 4,
+          fontWeight: '500',
+        },
+      }}
+    >
+      {/* 1. 충전 (Charge) */}
+      <Tab.Screen
+        name="Charge"
+        component={ChargeScreen}
+        options={{
+          tabBarLabel: '충전',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="map-marker-outline" color={color} size={26} />
+          ),
+        }}
+      />
 
-      {/* Row 1 */}
-      <Text style={styles.label}>기본 아이콘들</Text>
-      <View style={styles.row}>
-        <TestItem label="영화" type="movie" />
-        <TestItem label="음악" type="music" />
-        <TestItem label="게시판" type="board" />
-      </View>
+      {/* 2. 영화 (Movie) */}
+      <Tab.Screen
+        name="Movie"
+        component={MovieScreen}
+        options={{
+          tabBarLabel: '영화',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="movie-open" color={color} size={26} />
+          ),
+        }}
+      />
 
-      {/* Row 2 */}
-      <View style={styles.row}>
-        <TestItem label="알림" type="alarm" />
-        <TestItem label="공지" type="notice" />
-        <TestItem label="마이페이지" type="mypage" />
-      </View>
+      {/* 3. 음악 (Music) */}
+      <Tab.Screen
+        name="Music"
+        component={MusicScreen}
+        options={{
+          tabBarLabel: '음악',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="music" color={color} size={26} />
+          ),
+        }}
+      />
 
-      {/* Row 3 */}
-      <View style={styles.row}>
-        <TestItem label="로그아웃" type="logout" />
-        <TestItem label="프로필 수정" type="profileEdit" />
-        <TestItem label="댓글 삭제" type="commentDelete" />
-      </View>
+      {/* 4. 운세 (Fortune) */}
+      <Tab.Screen
+        name="Fortune"
+        component={FortuneScreen}
+        options={{
+          tabBarLabel: '운세',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="star-four-points-outline" color={color} size={26} />
+          ),
+        }}
+      />
 
-      {/* Row 4 */}
-      <View style={styles.row}>
-        <TestItem label="댓글 수정" type="commentEdit" />
-        <TestItem label="운세" type="fortune" />
-        <TestItem label="충전" type="charge" />
-      </View>
+      {/* 5. 게시판 (Board) */}
+      <Tab.Screen
+        name="Board"
+        component={BoardScreen}
+        options={{
+          tabBarLabel: '게시판',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="comment-outline" color={color} size={26} />
+          ),
+        }}
+      />
 
-      {/* Row 5 */}
-      <View style={styles.row}>
-        <TestItem label="현재 위치" type="currentLocation" />
-        <TestItem label="신고" type="report" />
-        
-        <View style={styles.testBlock}>
-          <Text style={styles.blockLabel}>좋아요 (토글)</Text>
-          <IconButton
-            type="like"
-            toggled={liked}
-            onPress={() => setLiked(!liked)}
-            size={30}
-          />
-        </View>
-      </View>
-
-    </ScrollView>
-  );
-}
-
-// 작은 테스트 블록 재사용 컴포넌트
-function TestItem({ label, type }) {
-  return (
-    <View style={styles.testBlock}>
-      <Text style={styles.blockLabel}>{label}</Text>
-      <IconButton type={type} size={30} onPress={() => console.log(label)} />
-    </View>
+      {/* 6. 마이페이지 (MyPage) */}
+      <Tab.Screen
+        name="MyPage"
+        component={MyPageScreen}
+        options={{
+          tabBarLabel: '마이페이지',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="account-outline" color={color} size={26} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    paddingBottom: 60,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  label: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginVertical: 10,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 25,
-  },
-  testBlock: {
+  screen: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    width: '30%',
-  },
-  blockLabel: {
-    fontSize: 14,
-    marginBottom: 6,
-    color: '#444',
-    textAlign: 'center',
+    backgroundColor: '#F9FAFB', // Button.js의 배경색 참조
   },
 });

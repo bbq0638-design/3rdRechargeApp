@@ -1,64 +1,160 @@
-import React, {useState, useRef} from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Image,
   Pressable,
   Animated,
   PanResponder,
+  Image,
+  PermissionsAndroid,
+  Platform,
 } from 'react-native';
 import TextInput from '../../components/common/TextInput';
 import IconButton from '../../components/common/iconButton';
 import ChargerList from '../../components/charger/ChargerList';
 import SelectableButton from '../../components/common/SelectableButton';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import ChargerFilter from '../../components/charger/ChargerFilter';
+import {WebView} from 'react-native-webview';
+import Geolocation from 'react-native-geolocation-service';
 
-export default function ChargerMainScreen() {
+export default function ChargerMainScreen({navigation}) {
+  /** ---------------- 필터 상태 ---------------- */
   const [pressed, setPressed] = useState(false);
   const [speed, setSpeed] = useState('');
   const [searchPressed, setSearchPressed] = useState(false);
+  const [filterCompany, setFilterCompany] = useState([]);
+  const [filterType, setFilterType] = useState([]);
+  const [filterSpeed, setFilterSpeed] = useState([]);
+  const [filterOpenType, setFilterOpenType] = useState('');
+  const [filterWait, setFilterWait] = useState('');
 
-  // 🔥 Bottom Sheet 설정
-  const SHEET_HEIGHT = 570; // 바텀시트 전체 높이
-  const PEEK_AREA = 130; // 기본으로 보여줄 영역 높이
-  const CLOSED_Y = SHEET_HEIGHT - PEEK_AREA; // 기본 위치
-  const OPEN_Y = 0; // 위로 올렸을 때 위치
-  const SNAP_THRESHOLD = 40; // 스냅 여유값
+  const webRef = useRef(null);
+  const isMapReady = useRef(false);
 
-  // 현재 translateY 값
+  const toggleValue = (list, value) =>
+    list.includes(value) ? list.filter(v => v !== value) : [...list, value];
+
+  /** ---------------- 위치권한 ---------------- */
+
+  useEffect(() => {
+    const requestPermission = async () => {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: '현재 위치 접근',
+            message: '지도를 위해 위치 권한이 필요합니다.',
+            buttonNeutral: '나중에',
+            buttonNegative: '거부',
+            buttonPositive: '허용',
+          },
+        );
+
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          console.log('위치 권한 허용됨');
+        } else {
+          console.log('위치 권한 거부됨');
+        }
+      } catch (err) {
+        console.warn(err);
+      }
+    };
+
+    // 안드로이드에서만 요청 → iOS는 따로 처리
+    if (Platform.OS === 'android') {
+      requestPermission();
+    }
+  }, []);
+
+  /** ---------------- 지도api ---------------- */
+
+  const sendToWebView = msg => {
+    if (webRef.current) {
+      webRef.current.postMessage(msg);
+    }
+  };
+
+  const moveToCurrentLocation = () => {
+    Geolocation.getCurrentPosition(
+      position => {
+        const {latitude, longitude} = position.coords;
+
+        const payload = JSON.stringify({
+          type: 'moveTo',
+          lat: latitude,
+          lng: longitude,
+        });
+
+        console.log('현재 위치:', latitude, longitude);
+
+        webRef.current.postMessage(payload);
+      },
+      error => {
+        console.log('현재 위치 오류:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 10000,
+      },
+    );
+  };
+
+  useEffect(() => {
+    Geolocation.getCurrentPosition(
+      position => {
+        const {latitude, longitude} = position.coords;
+
+        const payload = JSON.stringify({
+          type: 'init',
+          lat: latitude,
+          lng: longitude,
+        });
+
+        console.log('초기 위치:', latitude, longitude);
+
+        webRef.current.postMessage(payload);
+      },
+      error => {
+        console.log('초기 위치 가져오기 오류:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 10000,
+      },
+    );
+  }, []);
+
+  /** ---------------- 바텀시트 ---------------- */
+  const SHEET_HEIGHT = 450;
+  const PEEK_AREA = 80;
+  const CLOSED_Y = SHEET_HEIGHT - PEEK_AREA;
+  const OPEN_Y = 0;
+  const SNAP = 40;
+
   const sheetY = useRef(new Animated.Value(CLOSED_Y)).current;
-  // 현재 위치를 기억 (다음 드래그의 기준점)
   const lastYRef = useRef(CLOSED_Y);
 
   const panResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gestureState) =>
-        Math.abs(gestureState.dy) > 4,
-
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 4,
       onPanResponderMove: (_, gesture) => {
-        // 직전 위치 + 이번 드래그 거리
         let newY = lastYRef.current + gesture.dy;
-
-        // 위/아래 경계값 제한
         if (newY < OPEN_Y) newY = OPEN_Y;
         if (newY > CLOSED_Y) newY = CLOSED_Y;
-
         sheetY.setValue(newY);
       },
-
       onPanResponderRelease: (_, gesture) => {
         let newY = lastYRef.current + gesture.dy;
 
-        if (newY < OPEN_Y) newY = OPEN_Y;
-        if (newY > CLOSED_Y) newY = CLOSED_Y;
-
-        const midPoint = (OPEN_Y + CLOSED_Y) / 2;
-
+        const mid = (OPEN_Y + CLOSED_Y) / 2;
         const toValue =
-          newY < midPoint - SNAP_THRESHOLD
+          newY < mid - SNAP
             ? OPEN_Y
-            : newY > midPoint + SNAP_THRESHOLD
+            : newY > mid + SNAP
             ? CLOSED_Y
             : newY - OPEN_Y < CLOSED_Y - newY
             ? OPEN_Y
@@ -68,7 +164,6 @@ export default function ChargerMainScreen() {
           toValue,
           useNativeDriver: false,
         }).start(() => {
-          // 다음 드래그 기준점 업데이트
           lastYRef.current = toValue;
           sheetY.setValue(toValue);
         });
@@ -76,128 +171,115 @@ export default function ChargerMainScreen() {
     }),
   ).current;
 
-  // 테스트용 데이터
+  /** ---------------- 더미 데이터 ---------------- */
   const stationData = [
     {
       name: '강남 공영주차장 충전소',
       company: '환경부',
       address1: '서울 강남구 테헤란로 123',
       address2: 'B1',
-      available: 3,
-      total: 6,
-      speedKw: 120,
-      types: ['DC콤보', 'AC완속'],
       distanceKm: 1.2,
+      chargers: [
+        {type: 'DC콤보', kw: 120, available: 1, total: 3},
+        {type: 'AC완속', kw: 7, available: 2, total: 4},
+      ],
     },
     {
       name: '서초구청 충전소',
       company: '한국전력',
       address1: '서울 서초구 서초대로 45',
       address2: '',
-      available: 0,
-      total: 4,
-      speedKw: 50,
-      types: ['차데모', 'DC콤보'],
       distanceKm: 2.8,
-    },
-    {
-      name: '롯데월드타워 충전소',
-      company: 'LG U+',
-      address1: '서울 송파구 올림픽로 300',
-      address2: '지하2층',
-      available: 7,
-      total: 10,
-      speedKw: 200,
-      types: ['DC콤보'],
-      distanceKm: 4.3,
-    },
-    {
-      name: '롯데월드타워 충전소',
-      company: 'LG U+',
-      address1: '서울 송파구 올림픽로 300',
-      address2: '지하2층',
-      available: 7,
-      total: 10,
-      speedKw: 200,
-      types: ['DC콤보'],
-      distanceKm: 4.3,
-    },
-    {
-      name: '롯데월드타워 충전소',
-      company: 'LG U+',
-      address1: '서울 송파구 올림픽로 300',
-      address2: '지하2층',
-      available: 7,
-      total: 10,
-      speedKw: 200,
-      types: ['DC콤보'],
-      distanceKm: 4.3,
-    },
-    {
-      name: '롯데월드타워 충전소',
-      company: 'LG U+',
-      address1: '서울 송파구 올림픽로 300',
-      address2: '지하2층',
-      available: 7,
-      total: 10,
-      speedKw: 200,
-      types: ['DC콤보'],
-      distanceKm: 4.3,
-    },
-    {
-      name: '롯데월드타워 충전소',
-      company: 'LG U+',
-      address1: '서울 송파구 올림픽로 300',
-      address2: '지하2층',
-      available: 7,
-      total: 10,
-      speedKw: 200,
-      types: ['DC콤보'],
-      distanceKm: 4.3,
+      chargers: [
+        {type: '차데모', kw: 50, available: 0, total: 1},
+        {type: 'DC콤보', kw: 100, available: 0, total: 3},
+      ],
     },
   ];
 
+  const onPressItem = item => {
+    navigation.navigate('ChargerDetail', {charger: item});
+  };
+
+  /** ---------------- 필터 애니메이션 ---------------- */
+  const FILTER_HEIGHT = 450;
+  const filterY = useRef(new Animated.Value(FILTER_HEIGHT)).current;
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  const openFilter = () => {
+    setFilterOpen(true);
+    Animated.timing(filterY, {
+      toValue: 0,
+      duration: 280,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const closeFilter = () => {
+    Animated.timing(filterY, {
+      toValue: FILTER_HEIGHT,
+      duration: 260,
+      useNativeDriver: false,
+    }).start(() => setFilterOpen(false));
+  };
+
+  // 🔧 여기만 수정: 적용하기 눌렀을 때 부모 필터 상태 저장 + 닫기
+  const applyFilter = (company, type, speed, open, wait) => {
+    setFilterCompany(company);
+    setFilterType(type);
+    setFilterSpeed(speed);
+    setFilterOpenType(open);
+    setFilterWait(wait);
+    closeFilter();
+  };
+
+  /** ---------------- 렌더링 ---------------- */
   return (
     <View style={styles.container}>
-      {/* 지도 백그라운드 */}
-      <Image
-        source={require('../../assets/images/map.jpg')}
-        style={styles.image}
+      {/* WebView 지도 */}
+      <WebView
+        ref={webRef}
+        source={{uri: 'file:///android_asset/map.html'}}
+        style={styles.map}
+        javaScriptEnabled={true}
+        originWhitelist={['*']}
+        injectedJavaScript={`window.ReactNativeWebView = window.ReactNativeWebView || {};`}
+        onMessage={e => console.log('HTML → RN 메시지:', e.nativeEvent.data)}
       />
-
       {/* 검색창 */}
-      <View style={styles.searchWrapper}>
+      <View style={styles.searchWrapper} pointerEvents="box-none">
         <TextInput
           placeholder="주소를 입력하세요."
           width="88%"
           inputStyle={styles.searchInput}
         />
+
         <Pressable
           onPress={() => console.log('검색')}
           onPressIn={() => setSearchPressed(true)}
           onPressOut={() => setSearchPressed(false)}
           style={[
             styles.searchButton,
-            {elevation: 50},
             searchPressed && {backgroundColor: '#003766'},
           ]}>
           <MaterialCommunityIcons name="magnify" size={20} color="white" />
         </Pressable>
       </View>
 
-      {/* 필터 */}
-      <View style={styles.filterRadio}>
+      {/* 필터 버튼 + 셀렉터 */}
+      <View style={styles.filterRadio} pointerEvents="box-none">
         <IconButton
           type="filter"
           size={15}
+          onPress={openFilter}
           style={[styles.filterButton, {elevation: 15}]}
         />
 
         <SelectableButton
-          label={<Text style={{fontSize: 14}}>무료 주차장</Text>}
+          label={<Text style={{fontSize: 14}}>무료</Text>}
           icon={<MaterialCommunityIcons name="parking" />}
           onPress={() => setPressed(prev => !prev)}
-          selected={pressed === true}
+          selected={pressed}
           style={styles.filterItem}
         />
 
@@ -218,6 +300,30 @@ export default function ChargerMainScreen() {
         />
       </View>
 
+      {/* Zoom 버튼 */}
+      <View style={styles.zoomWrapper} pointerEvents="box-none">
+        <Pressable
+          style={styles.zoomBtn}
+          onPress={() => sendToWebView('zoomIn')}>
+          <Text style={styles.zoomText}>+</Text>
+        </Pressable>
+        <Pressable
+          style={styles.zoomBtn}
+          onPress={() => sendToWebView('zoomOut')}>
+          <Text style={styles.zoomText}>-</Text>
+        </Pressable>
+      </View>
+
+      {/* 현재 위치 버튼 */}
+      <IconButton
+        type="currentLocation"
+        style={styles.currentLocation}
+        size={20}
+        color="#004E89"
+        onPress={moveToCurrentLocation}
+      />
+
+      {/* 바텀시트*/}
       <Animated.View
         style={[
           {
@@ -227,52 +333,77 @@ export default function ChargerMainScreen() {
             bottom: 0,
             height: SHEET_HEIGHT,
             transform: [{translateY: sheetY}],
+            zIndex: 50,
           },
         ]}
         {...panResponder.panHandlers}>
-        {/* 현재 위치 버튼 */}
-        <IconButton
-          type="currentLocation"
-          style={styles.currentLocation}
-          size={20}
-          color="#004E89"
+        <ChargerList
+          data={stationData}
+          count={stationData.length}
+          onPressItem={onPressItem}
         />
-
-        {/* 리스트 */}
-        <ChargerList data={stationData} count={stationData.length} />
       </Animated.View>
+
+      {/* 필터 모달 */}
+      {filterOpen && (
+        <View style={styles.overlay}>
+          <Pressable style={styles.overlayBackground} onPress={closeFilter} />
+
+          <Animated.View
+            style={[
+              styles.filterWrapper,
+              {height: FILTER_HEIGHT, transform: [{translateY: filterY}]},
+            ]}>
+            <ChargerFilter
+              company={filterCompany}
+              type={filterType}
+              speed={filterSpeed}
+              open={filterOpenType}
+              wait={filterWait}
+              onClose={closeFilter}
+              onApply={applyFilter} // ✅ 여기 수정: 값 받아서 저장 + 닫기
+              onChangeCompany={setFilterCompany}
+              onChangeType={setFilterType}
+              onChangeSpeed={setFilterSpeed}
+              onChangeOpen={setFilterOpenType}
+              onChangeWait={setFilterWait}
+            />
+          </Animated.View>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {flex: 1},
-  image: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+
+  map: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 5,
   },
 
-  /** 검색창 **/
   searchWrapper: {
     position: 'absolute',
     top: 20,
-    left: 20,
+    left: 10,
     right: 20,
     flexDirection: 'row',
-    padding: 4,
+    zIndex: 10,
   },
+
   searchInput: {
     borderRadius: 10,
-    backgroundColor: '#F9FAFB',
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowOffset: {width: 0, height: 1},
-    shadowRadius: 3,
+    backgroundColor: '#fff',
     elevation: 5,
   },
+
   searchButton: {
-    marginLeft: 10,
+    marginLeft: 5,
     backgroundColor: '#004E89',
     width: 48,
     height: 48,
@@ -281,16 +412,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  /** 필터 **/
   filterRadio: {
     position: 'absolute',
     top: 80,
-    left: 20,
+    left: 10,
     right: 20,
     flexDirection: 'row',
+    zIndex: 10,
   },
+
   filterButton: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#fff',
     width: 50,
     height: 35,
     borderRadius: 30,
@@ -298,26 +430,68 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 5,
   },
+
   filterItem: {
     paddingVertical: 8,
-    overflow: 'visible',
-    alignItems: 'center',
-    marginRight: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowOffset: {width: 0, height: 1},
-    shadowRadius: 3,
+    marginRight: 6,
     elevation: 5,
   },
 
-  /** Bottom Sheet **/
-  listWrapper: {
+  currentLocation: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 90,
+    left: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F9FAFB',
+    elevation: 6,
+    zIndex: 10,
+  },
+
+  zoomWrapper: {
+    position: 'absolute',
+    top: 150,
+    right: 10,
+    alignItems: 'center',
+    zIndex: 10,
+  },
+
+  zoomBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#ffffffdd',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 4,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+
+  zoomText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#000',
+    backgroundColor: '#ffffffdd',
+  },
+
+  overlay: {
+    position: 'absolute',
     left: 0,
     right: 0,
+    top: 0,
+    bottom: 0,
+    zIndex: 998,
   },
-  sheet: {
+
+  overlayBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+  },
+
+  filterWrapper: {
     position: 'absolute',
     left: 0,
     right: 0,
@@ -325,28 +499,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingTop: 10,
-    zIndex: 999,
     elevation: 30,
-  },
-
-  currentLocation: {
-    backgroundColor: '#F9FAFB',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 7,
-    marginLeft: 15,
-    elevation: 3,
-  },
-
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 20,
-    marginBottom: 8,
-    color: '#111827',
+    zIndex: 999,
   },
 });

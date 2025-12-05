@@ -7,6 +7,7 @@ export default function MediaListSection({
   items = [],
   variant = 'movie', // 'movie' | 'music' | 'post'
   onPressItem,
+  onFavoriteToggle,
 }) {
   // 데이터가 없으면 섹션 자체를 숨김
   if (!items || items.length === 0) return null;
@@ -34,6 +35,8 @@ export default function MediaListSection({
                 : item.image
             }
             variant={variant}
+            isFavorite={item.isFavorite} // ⭐ 내려주기
+            onFavoriteToggle={() => onFavoriteToggle(item.id)}
             onPress={() => onPressItem?.(item)}
           />
         ))}
@@ -44,7 +47,7 @@ export default function MediaListSection({
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 30,
+    marginTop: 10,
   },
   sectionTitle: {
     fontSize: 20,

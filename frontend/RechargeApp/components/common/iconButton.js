@@ -23,6 +23,8 @@ const ICONS = {
   report: 'alarm-light-outline',
   filter: 'tune-variant',
   search: 'magnify',
+  setting: 'cog',
+  play: 'play-circle',
 };
 
 export default function IconButton({

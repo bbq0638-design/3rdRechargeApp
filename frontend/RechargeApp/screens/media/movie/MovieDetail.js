@@ -7,7 +7,10 @@ import FavoriteButton from '../../../components/media/contents/FavoriteButton';
 import UserRecommendBox from '../../../components/media/contents/UserRecommendBox';
 import MediaListSection from '../../../components/media/lists/MediaListsSection';
 
-export default function MovieDetail() {
+export default function MovieDetail({route}) {
+  const {movieId, type} = route.params;
+
+  const isUserPost = type === 'post';
   const similarMovies = [
     {
       id: '21',
@@ -64,11 +67,19 @@ export default function MovieDetail() {
       />
 
       {/* 추천 이유 컴포넌트 */}
-      <UserRecommendBox
-        reason={testReason}
-        nickname={nickname}
-        style={{marginTop: 30}}
-      />
+      {isUserPost && (
+        <UserRecommendBox
+          reason={testReason}
+          nickname={nickname}
+          style={{marginTop: 20}}
+          onPressNickname={() =>
+            navigation.navigate('MyPage', {
+              screen: 'MyPageScreen',
+              params: {isMine: false},
+            })
+          }
+        />
+      )}
 
       {/* ⭐ 댓글 */}
       <View style={{marginTop: 10}}>

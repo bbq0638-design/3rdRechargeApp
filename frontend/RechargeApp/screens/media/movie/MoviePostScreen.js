@@ -1,8 +1,8 @@
 import React, {useState, useEffect} from 'react';
 import {
   View,
-  StyleSheet,
   Text,
+  StyleSheet,
   Animated,
   ScrollView,
   KeyboardAvoidingView,
@@ -21,7 +21,6 @@ const TMDB_API_KEY = '6df9f08c130ae1944d95264798f87686';
 export default function MoviePostScreen() {
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [showSearchBar, setShowSearchBar] = useState(true);
   const [reason, setReason] = useState('');
   const fadeAnim = useState(new Animated.Value(0))[0];
 
@@ -74,62 +73,50 @@ export default function MoviePostScreen() {
     <KeyboardAvoidingView
       style={{flex: 1}}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled">
-        {/* 검색창 */}
-        {showSearchBar && (
-          <MediaSearchBar
-            type="movie"
-            placeholder="영화 제목을 검색하세요"
-            hideResults={!!selectedMovie}
-            onSelect={async movie => {
-              const detail = await fetchMovieDetail(movie.id);
-              setSelectedMovie(detail);
-              setShowSearchBar(false);
-            }}
-          />
-        )}
+      {/* 🔥 검색창 + 드롭다운 (상단 고정) */}
+      <View style={styles.searchWrapper}>
+        <MediaSearchBar
+          type="movie"
+          placeholder="영화 제목을 검색하세요"
+          hideResults={false}
+          onSelect={async movie => {
+            const detail = await fetchMovieDetail(movie.id);
+            setSelectedMovie(detail);
+          }}
+        />
+      </View>
 
+      {/* 🔥 나머지 화면 */}
+      <ScrollView
+        style={{flex: 1}}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
         {/* 안내 박스 */}
         {!loading && !selectedMovie && (
-          <Animated.View style={[styles.infoPlaceholder, {opacity: fadeAnim}]}>
-            <Text style={styles.placeholderTitle}>
-              영화 검색을 시작해보세요
-            </Text>
-            <Text style={styles.placeholderDesc}>
+          <Animated.View style={[styles.infoBox, {opacity: fadeAnim}]}>
+            <Text style={styles.infoTitle}>영화 검색을 시작해보세요</Text>
+            <Text style={styles.infoDesc}>
               검색창에 영화 제목을 입력하면 정보를 보여드릴게요
             </Text>
           </Animated.View>
         )}
 
+        {/* 로딩 */}
         {loading && <LoadingAnimation style={{marginTop: 20}} />}
 
-        {/* 상세 정보 + 다시 검색 */}
+        {/* 영화 상세 */}
         {!loading && selectedMovie && (
           <View style={{marginTop: 20}}>
-            <MovieInfo
-              movie={selectedMovie}
-              isPost={false}
-              isMine={false}
-              isAdmin={false}
-            />
+            <MovieInfo movie={selectedMovie} isPost={false} />
 
             <Button
               type="submit"
-              text="영화 다시 검색하기 ✨"
+              text="영화 다시 선택하기 ✨"
               height={44}
               onPress={() => {
-                Animated.timing(fadeAnim, {
-                  toValue: 0,
-                  duration: 250,
-                  useNativeDriver: true,
-                }).start(() => {
-                  setSelectedMovie(null);
-                  setShowSearchBar(true);
-                  setReason('');
-                });
+                setSelectedMovie(null);
+                setReason('');
               }}
               style={{marginBottom: 16}}
               textStyle={{fontSize: 15}}
@@ -145,11 +132,11 @@ export default function MoviePostScreen() {
           onChangeText={setReason}
           placeholder="이 영화를 추천하는 이유를 작성해주세요"
           maxLength={300}
-          style={{marginTop: 8, height: 130}}
           autoGrow={false}
+          style={{marginTop: 8, height: 130}}
         />
 
-        {/* 제출 버튼 */}
+        {/* 제출 */}
         <Button
           type="submit"
           text="추천글 등록하기"
@@ -158,7 +145,7 @@ export default function MoviePostScreen() {
           onPress={() => {
             console.log('제출!', {selectedMovie, reason});
           }}
-          style={{marginTop: 16, marginBottom: 40}}
+          style={{marginTop: 20, marginBottom: 40}}
         />
       </ScrollView>
     </KeyboardAvoidingView>
@@ -166,31 +153,47 @@ export default function MoviePostScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
+  /* 🔥 검색창 absolute 고정 */
+  searchWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 6,
+    backgroundColor: '#FAFAFA',
+    zIndex: 9999,
+    elevation: 9999,
+  },
+
+  content: {
+    paddingTop: 90, // 🔥 검색창 높이만큼 아래로 내림
+    paddingHorizontal: 16,
     paddingBottom: 40,
     backgroundColor: '#FAFAFA',
   },
 
-  infoPlaceholder: {
+  infoBox: {
     marginTop: 20,
     padding: 20,
-    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    backgroundColor: '#FFF',
     alignItems: 'center',
     minHeight: 300,
     justifyContent: 'center',
   },
 
-  placeholderTitle: {
+  infoTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#111',
     marginBottom: 6,
   },
-  placeholderDesc: {
+
+  infoDesc: {
     fontSize: 14,
     color: '#6B7280',
     textAlign: 'center',
