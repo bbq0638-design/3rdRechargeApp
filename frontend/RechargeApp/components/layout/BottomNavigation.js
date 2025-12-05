@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Platform, Pressable } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import IconButton from '../common/iconButton';
+import React from 'react';
+import {Platform, StyleSheet} from 'react-native';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import BoardStack from './board/BoardStack';
 import ChargerStack from './charger/ChargerStack';
 import FortuneStack from './fortune/FortuneStack';
-import NoticeStack from './notice/NoticeStack'; 
-import SettingStack from './setting/SettingStack'; 
 import MusicStackNavigation from './media/MusicStackNavigation';
 import MyPageStackNavigation from './mypage/MypageStackNavigation';
 import MovieStackNavigation from './media/MovieStackNavigation';
+import NoticeStack from './notice/NoticeStack';
+import SettingStack from './setting/SettingStack';
 
 const Tab = createBottomTabNavigator();
 
@@ -17,35 +18,9 @@ const COLORS = {
   primary: '#004E89',
   inactive: '#9CA3AF',
   background: '#F9FAFB',
-  pressed: '#e5e5e5', 
 };
 
-// 누를 때 회색
-const CustomTabButton = (props) => {
-  const { onPress, onLongPress, children } = props;
-  const [pressed, setPressed] = useState(false);
-
-  return (
-    <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
-      onPressIn={() => setPressed(true)}  
-      onPressOut={() => setPressed(false)} 
-      style={{
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: 10,
-        marginHorizontal: 2,
-        backgroundColor: pressed ? COLORS.pressed : 'transparent', // 눌렸을 때만 회색!
-      }}
-    >
-      {children}
-    </Pressable>
-  );
-};
-
-export default function BottomNavigation() {
+export default function BottomNavigation({setIsLoggedIn}) {
   return (
     <Tab.Navigator
       initialRouteName="Charge"
@@ -53,42 +28,35 @@ export default function BottomNavigation() {
         headerShown: false,
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.inactive,
-        // 기존에 색이 안 빠지던 원인(tabBarActiveBackgroundColor)을 제거하고
-        // 위에서 만든 CustomTabButton을 모든 탭 버튼으로 교체합니다.
-        tabBarButton: (props) => <CustomTabButton {...props} />,
-        
         tabBarStyle: {
           height: Platform.OS === 'ios' ? 90 : 65,
-          paddingTop: 0,
           paddingBottom: Platform.OS === 'ios' ? 25 : 5,
           backgroundColor: COLORS.background,
-          borderTopColor: '#E5E7EB',
           borderTopWidth: 1,
+          borderTopColor: '#E5E7EB',
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
-          marginTop: -5,
           marginBottom: 5,
         },
-      }}
-    >
-      {/* 1. 충전 */}
+      }}>
       <Tab.Screen
         name="Charge"
         component={ChargerStack}
         options={{
           tabBarLabel: '충전',
           unmountOnBlur: true,
-          tabBarIcon: ({ color }) => (
-            <View pointerEvents="none" style={styles.iconContainer}>
-              <IconButton type="charge" color={color} size={24} style={styles.iconButton} />
-            </View>
+          tabBarIcon: ({color}) => (
+            <MaterialCommunityIcons
+              name="map-marker-outline"
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
 
-      {/* 2. 영화 */}
       <Tab.Screen
         name="Movie"
         component={MovieStackNavigation}
@@ -96,18 +64,11 @@ export default function BottomNavigation() {
           tabBarLabel: '영화',
           unmountOnBlur: true,
           tabBarIcon: ({color}) => (
-            <View pointerEvents="none" style={styles.iconContainer}>
-              <IconButton
-                type="movie"
-                color={color}
-                size={24}
-                style={styles.iconButton}
-              />
-            </View>
+            <MaterialCommunityIcons name="movie-open" size={24} color={color} />
           ),
         }}
       />
-      {/* 3. 음악 */}
+
       <Tab.Screen
         name="Music"
         component={MusicStackNavigation}
@@ -115,111 +76,72 @@ export default function BottomNavigation() {
           tabBarLabel: '음악',
           unmountOnBlur: true,
           tabBarIcon: ({color}) => (
-            <View pointerEvents="none" style={styles.iconContainer}>
-              <IconButton
-                type="music"
-                color={color}
-                size={24}
-                style={styles.iconButton}
-              />
-            </View>
+            <MaterialCommunityIcons name="music" size={24} color={color} />
           ),
         }}
       />
 
-
-      {/* 4. 운세 */}
       <Tab.Screen
         name="Fortune"
         component={FortuneStack}
         options={{
           tabBarLabel: '운세',
           unmountOnBlur: true,
-          tabBarIcon: ({ color }) => (
-            <View pointerEvents="none" style={styles.iconContainer}>
-              <IconButton type="fortune" color={color} size={24} style={styles.iconButton} />
-            </View>
+          tabBarIcon: ({color}) => (
+            <MaterialCommunityIcons
+              name="star-four-points-outline"
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
 
-      {/* 5. 게시판 */}
       <Tab.Screen
         name="Board"
         component={BoardStack}
         options={{
           tabBarLabel: '게시판',
           unmountOnBlur: true,
-          tabBarIcon: ({ color }) => (
-            <View pointerEvents="none" style={styles.iconContainer}>
-              <IconButton type="board" color={color} size={24} style={styles.iconButton} />
-            </View>
+          tabBarIcon: ({color}) => (
+            <MaterialCommunityIcons
+              name="comment-outline"
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
 
-       {/* 6. 마이페이지 */}
       <Tab.Screen
         name="MyPage"
-        component={MyPageStackNavigation}
-        options={({navigation}) => ({
+        options={{
           tabBarLabel: '마이페이지',
           unmountOnBlur: true,
           tabBarIcon: ({color}) => (
-            <View pointerEvents="none" style={styles.iconContainer}>
-              <IconButton type="mypage" color={color} size={24} />
-            </View>
-          ),
-
-          // ⭐ 탭 눌렀을 때 무조건 내 마이페이지로 reset!
-          tabBarButton: props => (
-            <CustomTabButton
-              {...props}
-              onPress={() => {
-                navigation.reset({
-                  index: 0,
-                  routes: [{name: 'MyPage'}],
-                });
-              }}
+            <MaterialCommunityIcons
+              name="account-outline"
+              size={24}
+              color={color}
             />
           ),
-        })}
+        }}>
+        {() => <MyPageStackNavigation setIsLoggedIn={setIsLoggedIn} />}
+      </Tab.Screen>
+
+      <Tab.Screen
+        name="Notice"
+        component={NoticeStack}
+        options={{tabBarButton: () => null}}
       />
 
-      <Tab.Screen 
-        name="NoticeStack" 
-        component={NoticeStack}
-        options={{
-          tabBarButton: () => null, // 버튼 숨기기
-          headerShown: false,       // NoticeStack 자체 헤더 사용
-        }} 
-      />
-      
-      <Tab.Screen 
-        name="SettingStack" 
+      <Tab.Screen
+        name="Setting"
         component={SettingStack}
-        options={{
-          tabBarButton: () => null, // 버튼 숨기기
-          headerShown: false,       // SettingStack 자체 헤더 사용
-        }} 
+        options={{tabBarButton: () => null}}
       />
     </Tab.Navigator>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-  },
-  iconContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 40,
-  },
-  iconButton: {
-    backgroundColor: 'transparent',
-  },
-});
+const styles = StyleSheet.create({});

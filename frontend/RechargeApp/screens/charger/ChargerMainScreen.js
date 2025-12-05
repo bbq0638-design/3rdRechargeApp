@@ -70,11 +70,15 @@ export default function ChargerMainScreen({navigation}) {
 
   /** ---------------- 지도api ---------------- */
 
-  const sendToWebView = msg => {
-    if (webRef.current) {
-      webRef.current.postMessage(msg);
+  const safePostMessage = msg => {
+    if (!webRef.current) {
+      console.log('⚠️ WebView 로드 전 메시지 → 무시');
+      return;
     }
+    webRef.current.postMessage(msg);
   };
+
+  const sendToWebView = msg => safePostMessage(msg);
 
   const moveToCurrentLocation = () => {
     Geolocation.getCurrentPosition(
@@ -89,7 +93,7 @@ export default function ChargerMainScreen({navigation}) {
 
         console.log('현재 위치:', latitude, longitude);
 
-        webRef.current.postMessage(payload);
+        safePostMessage(payload);
       },
       error => {
         console.log('현재 위치 오류:', error);
@@ -115,7 +119,7 @@ export default function ChargerMainScreen({navigation}) {
 
         console.log('초기 위치:', latitude, longitude);
 
-        webRef.current.postMessage(payload);
+        safePostMessage(payload);
       },
       error => {
         console.log('초기 위치 가져오기 오류:', error);

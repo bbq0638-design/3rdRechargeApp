@@ -1,65 +1,30 @@
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import BoardScreen from '../../../screens/board/BoardScreen';
-
-import Header from '../../layout/Header';
 import BoardDetailScreen from '../../../screens/board/BoardDetailScreen';
-import BoardWirteScreen from '../../../screens/board/BoardWriteScreen';
+import BoardWriteScreen from '../../../screens/board/BoardWriteScreen';
+import Header from '../../layout/Header';
 
 const Stack = createNativeStackNavigator();
 
 export default function BoardStack() {
   return (
     <Stack.Navigator>
-
       <Stack.Screen
-        name="BoarderMain"
+        name="BoardMain"
         component={BoardScreen}
-        options={{
-          header: props => (
-            <Header
-              {...props}
-              isLoggedIn={false}
-              onLogin={() => {}}
-              onLogout={() => {}}
-              onSignup={() => {}}
-            />
-          ),
-        }}
+        options={{header: props => <Header {...props} />}}
       />
-
       <Stack.Screen
         name="BoardDetail"
         component={BoardDetailScreen}
-        options={{
-          header: props => (
-            <Header
-              {...props}
-              isLoggedIn={true}
-              onLogin={() => {}}
-              onLogout={() => {}}
-              onSignup={() => {}}
-            />
-          ),
-        }}
+        options={{header: props => <Header {...props} />}}
       />
-
       <Stack.Screen
         name="BoardWrite"
-        component={BoardWirteScreen}
-        options={{
-          header: props => (
-            <Header
-              {...props}
-              isLoggedIn={true}
-              onLogin={() => {}}
-              onLogout={() => {}}
-              onSignup={() => {}}
-            />
-          ),
-        }}
+        component={BoardWriteScreen}
+        options={{header: props => <Header {...props} />}}
       />
-
     </Stack.Navigator>
   );
 }

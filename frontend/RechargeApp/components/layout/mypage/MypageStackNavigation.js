@@ -1,45 +1,25 @@
+import React from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-
 import MyPageScreen from '../../../screens/mypage/MyPageScreen';
 import FollowScreen from '../../../screens/mypage/FollowScreen';
 import Header from '../Header';
+
 const Stack = createNativeStackNavigator();
 
-function MyPageStackNavigation() {
+export default function MyPageStackNavigation({setIsLoggedIn}) {
   return (
     <Stack.Navigator>
       <Stack.Screen
-        name="MyPageScreen"
+        name="MyPageMain"
         component={MyPageScreen}
-        options={{
-          header: props => (
-            <Header
-              {...props}
-              isLoggedIn={false}
-              onLogin={() => {}}
-              onLogout={() => {}}
-              onSignup={() => {}}
-            />
-          ),
-        }}
+        initialParams={{setIsLoggedIn}}
+        options={{header: props => <Header {...props} />}}
       />
       <Stack.Screen
-        name="FollowScreen"
+        name="Follow"
         component={FollowScreen}
-        options={{
-          header: props => (
-            <Header
-              {...props}
-              isLoggedIn={false}
-              onLogin={() => {}}
-              onLogout={() => {}}
-              onSignup={() => {}}
-            />
-          ),
-        }}
+        options={{header: props => <Header {...props} />}}
       />
     </Stack.Navigator>
   );
 }
-
-export default MyPageStackNavigation;

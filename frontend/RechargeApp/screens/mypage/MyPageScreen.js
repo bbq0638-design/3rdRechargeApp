@@ -1,11 +1,13 @@
 import React, {useState} from 'react';
-import {ScrollView} from 'react-native';
+import {ScrollView, Alert} from 'react-native';
 import ProfileHeader from '../../components/mypage/contents/ProfileHeader';
 import MyPageTab from '../../components/mypage/buttontabs/MyPageTab';
 import MyPostMediaList from '../../components/mypage/contents/MyPostMediaList';
 import FavoriteMediaList from '../../components/mypage/contents/FavoriteMediaList';
+import {logout} from '../../utils/api';
 
 function MyPageScreen({route, navigation}) {
+  const {setIsLoggedIn} = route.params ?? {};
   const isMine = route?.params?.isMine ?? true;
   const [isFollowing, setIsFollowing] = useState(false);
 
@@ -54,6 +56,15 @@ function MyPageScreen({route, navigation}) {
     },
   ];
 
+  const handleLogout = async () => {
+    const result = await logout();
+
+    if (result) {
+      Alert.alert('로그아웃', '정상적으로 로그아웃되었습니다.');
+      setIsLoggedIn(false); // 🔥 RootStack이 자동으로 AuthStack으로 이동!
+    }
+  };
+
   return (
     <ScrollView style={{flex: 1, backgroundColor: '#fff'}}>
       <ProfileHeader
@@ -70,7 +81,7 @@ function MyPageScreen({route, navigation}) {
         onPressFollowing={() =>
           navigation.navigate('FollowScreen', {mode: 'following'})
         }
-        onLogout={() => console.log('로그아웃!')}
+        onLogout={handleLogout}
       />
 
       <MyPageTab
