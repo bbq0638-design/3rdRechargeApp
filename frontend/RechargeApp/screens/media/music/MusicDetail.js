@@ -68,7 +68,8 @@ function MusicDetail() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={{paddingBottom: 60}}>
+      contentContainerStyle={{paddingBottom: 60}}
+      showsVerticalScrollIndicator={false}>
       <View style={styles.cardWrapper}>
         {/* 제목 + 액션버튼 */}
         <View style={styles.titleRow}>

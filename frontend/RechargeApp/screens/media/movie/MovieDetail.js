@@ -50,7 +50,8 @@ export default function MovieDetail({route}) {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={{paddingBottom: 50}}>
+      contentContainerStyle={{paddingBottom: 50}}
+      showsVerticalScrollIndicator={false}>
       {/* ⭐ 영화 정보 */}
       <MovieInfo
         movie={fakeMovie}

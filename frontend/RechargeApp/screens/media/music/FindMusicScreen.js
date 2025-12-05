@@ -67,7 +67,7 @@ function FindMusicScreen() {
 
   return (
     <>
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* 상단 히어로 섹션 */}
         <MediaHomeContentCard
           title="콘서트 정보"

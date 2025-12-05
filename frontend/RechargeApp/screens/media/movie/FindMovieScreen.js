@@ -72,7 +72,7 @@ function FindMovieScreen() {
 
   return (
     <>
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <MediaHomeContentCard
           title="곧 개봉할 영화"
           subtitle="곧 영화관에서 만나요!"

@@ -105,7 +105,8 @@ function AiRecommendModal({
       animationOut="slideOutDown"
       animationInTiming={250}
       animationOutTiming={200}
-      style={{margin: 0, justifyContent: 'flex-end'}}>
+      style={{margin: 0, justifyContent: 'flex-end'}}
+      showsVerticalScrollIndicator={false}>
       <View style={styles.modalContainer}>
         {/* 헤더 */}
         <View style={styles.header}>

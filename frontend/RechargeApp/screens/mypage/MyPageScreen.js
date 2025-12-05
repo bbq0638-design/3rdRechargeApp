@@ -66,7 +66,9 @@ function MyPageScreen({route, navigation}) {
   };
 
   return (
-    <ScrollView style={{flex: 1, backgroundColor: '#fff'}}>
+    <ScrollView
+      style={{flex: 1, backgroundColor: '#fff'}}
+      showsVerticalScrollIndicator={false}>
       <ProfileHeader
         nickname="알꽁님"
         postCount={12}
