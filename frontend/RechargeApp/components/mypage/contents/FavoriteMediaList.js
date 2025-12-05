@@ -64,7 +64,7 @@ export default function FavoriteMediaList({
   const getMovieImage = item =>
     item.poster_path
       ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-      : item.image ?? '';
+      : (item.image ?? '');
 
   const getMusicImage = item => item.image || '';
 
@@ -159,9 +159,9 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 14,
+    paddingHorizontal: 35,
     paddingBottom: 50,
-    marginLeft: 30,
+    justifyContent: 'space-between',
   },
   card: {
     marginBottom: 22,

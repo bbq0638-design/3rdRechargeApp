@@ -1,0 +1,13 @@
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# 개인 로컬 세팅 파일
+workspace.xml
+modules.xml
+misc.xml
+vcs.xml
+material_theme_project_new.xml
+
+# IntelliJ 임시 저장 영역
+shelf/

@@ -113,9 +113,9 @@ const styles = StyleSheet.create({
   gridWrapper: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 14,
+    paddingHorizontal: 35,
     paddingBottom: 50,
-    marginLeft: 30, // 핵심!!
+    justifyContent: 'space-between',
   },
 
   /** 카드 스타일도 동일하게 유지해야 layout이 정확히 맞음 */
