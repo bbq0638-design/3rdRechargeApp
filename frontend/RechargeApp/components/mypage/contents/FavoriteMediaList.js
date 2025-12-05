@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 35,
+    paddingHorizontal: 14,
     paddingBottom: 50,
     justifyContent: 'space-between',
   },
