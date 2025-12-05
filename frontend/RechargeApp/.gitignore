@@ -4,6 +4,7 @@
 .env.development
 .env.production
 
+utils/api.js
 # OSX
 #
 .DS_Store
