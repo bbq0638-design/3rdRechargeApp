@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     paddingHorizontal: 14,
     paddingBottom: 50,
-    justifyContent: 'space-between',
+    marginLeft: 30, // 핵심!!
   },
 
   /** 카드 스타일도 동일하게 유지해야 layout이 정확히 맞음 */

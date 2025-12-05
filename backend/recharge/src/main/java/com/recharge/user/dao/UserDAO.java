@@ -10,4 +10,8 @@ public interface UserDAO {
     int checkUserId(String userId);
 
     int checkUserNickName(String userNickname);
+
+    UserVO getUserById(String userId);
+
+    int updateDeviceInfo(UserVO user);
 }

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.recharge.community.dao.CommunityDAO">
+
+    <select id="selectCommunityList" parameterType="map" resultType="com.recharge.community.vo.CommunityVO">
+        SELECT
+            C.COMMUNITY_POST_ID AS communityPostId,
+            C.COMMUNITY_TITLE_ AS communityTitle,
+            C.USER_ID AS userId,
+            --닉네임 없으면 탈퇴한 회원
+            NVL(U.USER_NICKNAME, '탈퇴한 회원') AS userNickname,
+            U.CREATE_DATE AS createDate,
+            C.COMMUNITY_VIEW_COUNT AS communityViewCount,
+            C.COMMUNITY_LIKE_COUNT AS communityLikeCount,
+            --이미지가 있으면 API URL 생성, 없으면 NULL
+            CASE WHEN C.COMMUNITY_IMAGE_DATA IS NOT NULL
+                THEN '/api/community/image/' || C.COMMUNITY_POST_ID
+                ELSE NULL
+            END AS communityImagePath
+        FROM TB_COMMUNITY C
+        LEFT JOIN TB_USER U ON C.USER_ID = U.USER_ID
+        ORDER BY community_post_id DESC
+    </select>
+
+    <select id="selectCommunityDetail" parameterType="long" resultType="com.recharge.community.vo.CommunityVO">
+        SELECT
+            C.COMMUNITY_POST_ID AS communityPostId,
+            C.COMMUNITY_TITLE AS communityTitle,
+            C.COMMUNITY_CONTENT AS communityContent,
+            C.USER_ID AS userId,
+            U.USER_NICKNAME AS userNickname,
+            U.USER_ROLE AS userRole,
+            C.CREATE_DATE AS createDate,
+            C.COMMUNITY_VIEW_COUNT AS communityViewCount,
+            C.COMMUNITY_LIKE_COUNT AS communityLikeCount,
+            CASE WHEN C.COMMUNITY_IMAGE_DATA IS NOT NULL
+                THEN '/api/community/image/' || C.COMMUNITY_POST_ID
+                ELSE NULL
+            END AS communityImagePath
+        FROM TB_COMMUNITY C
+        LEFT JOIN TB_USER ON C.USER_ID=U.USER_ID
+        WHERE C.COMMUNITY_POST_ID = #{communityPostId}
+    </select>
+
+    <select id="selectCommunityImage" parameterType="long" resultType="com.recharge.community.vo.CommunityVO">
+        SELECT COMMUNITY_IMAGE_DATA AS communityImageData
+        FROM TB_COMMUNITY
+        WHERE COMMUNITY_POST_ID = #{communityPostId}
+    </select>
+
+    <insert id="insertCommunity" parameterType="com.recharge.community.vo.CommunityVO">
+        <selectKey keyProperty="communityPostId" resultType="long" order="BEFORE">
+            SELECT SEQ_COMMUNITY_ID.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TB_COMMUNITY (
+            COMMUNITY_POST_ID, USER_ID, COMMUNITY_TITLE, COMMUNITY_CONTENT,
+            COMMUNITY_IMAGE_DATA, COMMUNITY_IMAGE_NAME, CREATE_DATE
+        ) VALUES (
+            #{communityPostId},
+    </insert>
+
+</mapper>

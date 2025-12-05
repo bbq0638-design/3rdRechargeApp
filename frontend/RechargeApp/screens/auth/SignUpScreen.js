@@ -7,23 +7,33 @@ import {
   Pressable,
   TouchableOpacity,
   Modal,
+  Alert,
 } from 'react-native';
 import Button from '../../components/common/Button';
 import TextInput from '../../components/common/TextInput';
 import SelectableButton from '../../components/common/SelectableButton';
+import {signup, checkUserId, checkUserNickname} from '../../utils/api';
 
 export default function SignUpScreen({navigation}) {
-  const [email, setEmail] = useState('');
-  const [gender, setGender] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [userGender, setUserGender] = useState('');
+  const [userId, setUserId] = useState('');
+  const [userPwd, setUserPwd] = useState('');
+  const [userName, setUserName] = useState('');
+  const [userNickname, setUserNickname] = useState('');
+  const [userBirth, setUserBirth] = useState('');
+  const [userPhone, setUserPhone] = useState('');
+  const [userCarModel, setUserCarModel] = useState('');
+
   const [phonePrefix, setPhonePrefix] = useState('010');
   const [showPhoneDropdown, setShowPhoneDropdown] = useState(false);
-  const dropdownRef = useRef(null);
   const [dropdownPos, setDropdownPos] = useState({
     top: 0,
     left: 0,
     width: 100,
   });
 
+  const dropdownRef = useRef(null);
   const passwordRef = useRef(null);
   const emailRef = useRef(null);
   const nameRef = useRef(null);
@@ -40,6 +50,33 @@ export default function SignUpScreen({navigation}) {
     });
   };
 
+  const handleSignup = async () => {
+    if (!userId || !userPwd || !userNickname || !userEmail || !userName) {
+      return Alert.alert('알림', '필수 입력 값을 입력해주세요.');
+    }
+
+    const userData = {
+      userId,
+      userPwd,
+      userEmail,
+      userName,
+      userNickname,
+      userBirth,
+      userGender: userGender === 'male' ? 'M' : 'F',
+      userPhone: phonePrefix + userPhone,
+      userCarModel,
+      createId: userId,
+    };
+
+    try {
+      const res = await signup(userData);
+      Alert.alert('회원가입 완료', res);
+      navigation.navigate('LoginMain');
+    } catch (err) {
+      Alert.alert('회원가입 실패', err);
+    }
+  };
+
   return (
     <ScrollView
       style={styles.container}
@@ -51,6 +88,8 @@ export default function SignUpScreen({navigation}) {
           label="아이디"
           placeholder="아이디를 입력하세요"
           width={'75%'}
+          value={userId}
+          onChangeText={setUserId}
           returnKeyType="next"
           onSubmitEditing={() => passwordRef.current?.focus()}
         />
@@ -61,6 +100,12 @@ export default function SignUpScreen({navigation}) {
           width={65}
           fontSize={12}
           style={styles.checkBtn}
+          onPress={async () => {
+            if (!userId) return Alert.alert('알림', '아이디를 입력해주세요!');
+            const exists = await checkUserId(userId);
+            if (exists) Alert.alert('중복', '이미 사용 중인 아이디입니다.');
+            else Alert.alert('확인', '사용 가능한 아이디입니다!');
+          }}
         />
       </View>
 
@@ -70,6 +115,8 @@ export default function SignUpScreen({navigation}) {
           label="비밀번호"
           placeholder="비밀번호를 입력하세요"
           secureTextEntry
+          value={userPwd}
+          onChangeText={setUserPwd}
           style={{marginTop: 20}}
           returnKeyType="next"
           onSubmitEditing={() => emailRef.current?.focus()}
@@ -81,11 +128,11 @@ export default function SignUpScreen({navigation}) {
           ref={emailRef}
           width={'75%'}
           label="이메일"
-          value={email}
-          onChangeText={setEmail}
+          value={userEmail}
+          onChangeText={setUserEmail}
           placeholder="이메일을 입력하세요"
           errorMessage={
-            !email.includes('@') && email
+            !userEmail.includes('@') && userEmail
               ? '올바른 이메일 형식이 아닙니다.'
               : ''
           }
@@ -108,6 +155,8 @@ export default function SignUpScreen({navigation}) {
           ref={nameRef}
           label="이름"
           placeholder="이름을 입력하세요"
+          value={userName}
+          onChangeText={setUserName}
           style={{marginTop: 20}}
           returnKeyType="next"
           onSubmitEditing={() => nicknameRef.current?.focus()}
@@ -120,6 +169,8 @@ export default function SignUpScreen({navigation}) {
           width={'75%'}
           label="닉네임"
           placeholder="닉네임을 입력하세요"
+          value={userNickname}
+          onChangeText={setUserNickname}
           style={{marginTop: 20}}
           returnKeyType="next"
           onSubmitEditing={() => birthRef.current?.focus()}
@@ -131,6 +182,13 @@ export default function SignUpScreen({navigation}) {
           width={65}
           fontSize={12}
           style={styles.checknicknameBtn}
+          onPress={async () => {
+            if (!userNickname)
+              return Alert.alert('알림', '닉네임을 입력해주세요!');
+            const exists = await checkUserNickname(userNickname);
+            if (exists) Alert.alert('중복', '이미 사용 중인 닉네임입니다.');
+            else Alert.alert('확인', '사용 가능한 닉네임입니다!');
+          }}
         />
       </View>
 
@@ -139,6 +197,8 @@ export default function SignUpScreen({navigation}) {
           ref={birthRef}
           label="생년월일"
           placeholder="생년월일 8자리 (예: 19900101)"
+          value={userBirth}
+          onChangeText={setUserBirth}
           style={{marginTop: 20}}
         />
       </View>
@@ -148,14 +208,16 @@ export default function SignUpScreen({navigation}) {
         <View style={styles.genderBtn}>
           <SelectableButton
             label="남자"
-            selected={gender === 'male'}
-            onPress={() => setGender(gender === 'male' ? '' : 'male')}
+            selected={userGender === 'male'}
+            onPress={() => setUserGender(userGender === 'male' ? '' : 'male')}
             style={{marginRight: 10, width: 148, borderRadius: 10}}
           />
           <SelectableButton
             label="여자"
-            selected={gender === 'female'}
-            onPress={() => setGender(gender === 'female' ? '' : 'female')}
+            selected={userGender === 'female'}
+            onPress={() =>
+              setUserGender(userGender === 'female' ? '' : 'female')
+            }
             style={{width: 148, borderRadius: 10}}
           />
         </View>
@@ -178,6 +240,8 @@ export default function SignUpScreen({navigation}) {
               width={'87%'}
               placeholder="전화번호를 입력하세요 (- 제외)"
               keyboardType="number-pad"
+              value={userPhone}
+              onChangeText={setUserPhone}
               maxLength={8}
               style={{marginLeft: 10}}
             />
@@ -225,13 +289,8 @@ export default function SignUpScreen({navigation}) {
         <TextInput
           label="차종"
           placeholder="차종을 입력하세요"
-          style={{marginTop: 20}}
-        />
-      </View>
-      <View style={styles.inputWithButton}>
-        <TextInput
-          label="차종"
-          placeholder="차종을 입력하세요"
+          value={userCarModel}
+          onChangeText={setUserCarModel}
           style={{marginTop: 20}}
         />
       </View>
@@ -241,6 +300,7 @@ export default function SignUpScreen({navigation}) {
           text="회원가입"
           type="submit"
           style={{marginTop: 50, marginBottom: 20}}
+          onPress={handleSignup}
         />
       </View>
     </ScrollView>

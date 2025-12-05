@@ -24,4 +24,6 @@ public class UserVO {
     private String createId;
     private Date updatedDate;
     private String updatedId;
+
+    private String token;
 }

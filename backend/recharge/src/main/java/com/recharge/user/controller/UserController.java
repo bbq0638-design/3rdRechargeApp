@@ -29,7 +29,7 @@ public class UserController {
     }
 
     //회원가입
-    @PostMapping("signup")
+    @PostMapping("/signup")
     public ResponseEntity<String> signup (@RequestBody UserVO user) {
 
         if(userService.checkUserId(user.getUserId())) {
@@ -46,5 +46,15 @@ public class UserController {
         }
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("회원가입 실패");
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login (@RequestBody UserVO user) {
+        try {
+            UserVO result = userService.login(user);
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

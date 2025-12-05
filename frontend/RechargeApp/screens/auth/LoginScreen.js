@@ -1,9 +1,32 @@
-import React from 'react';
-import {View, Text, StyleSheet, Pressable} from 'react-native';
+import React, {useState} from 'react';
+import {View, Text, StyleSheet, Pressable, Platform, Alert} from 'react-native';
 import TextInput from '../../components/common/TextInput';
 import Button from '../../components/common/Button';
+import {login} from '../../utils/api';
+import messaging from '@react-native-firebase/messaging';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function LoginScreen({navigation}) {
+export default function LoginScreen({navigation, route}) {
+  const [userId, setUserId] = useState('');
+  const [userPwd, setUserPwd] = useState('');
+
+  const {setIsLoggedIn} = route.params;
+
+  const handleLogin = async () => {
+    try {
+      const {token, userNickname} = await login({userId, userPwd});
+
+      await AsyncStorage.setItem('authToken', token);
+
+      Alert.alert('로그인 성공', `${userNickname}님 환영합니다.`);
+
+      setIsLoggedIn(true); // 🔥 최상단 분기로 이동
+    } catch (error) {
+      Alert.alert('로그인 실패', '아이디 또는 비밀번호를 확인해주세요.');
+      console.log('로그인 실패:', error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -15,12 +38,16 @@ export default function LoginScreen({navigation}) {
         <TextInput
           placeholder="아이디를 입력하세요."
           width="85%"
+          value={userId}
+          onChangeText={setUserId}
           style={styles.idInput}
         />
         <TextInput
           placeholder="비밀번호를 입력하세요."
           width="85%"
-          secureTextEntry={true}
+          value={userPwd}
+          onChangeText={setUserPwd}
+          secureTextEntry
         />
 
         <Button
@@ -28,6 +55,7 @@ export default function LoginScreen({navigation}) {
           type="submit"
           width="85%"
           style={{marginTop: 25}}
+          onPress={handleLogin}
         />
 
         {/* 아이디/비밀번호 찾기 영역 */}
@@ -66,7 +94,8 @@ export default function LoginScreen({navigation}) {
         {/* 가입하기 영역 */}
         <View style={styles.findArea}>
           <Text style={styles.findAreaText}>계정이 없으시다면</Text>
-          <Pressable onPress={() => navigation.navigate('TermsAgreementScreen')}>
+          <Pressable
+            onPress={() => navigation.navigate('TermsAgreementScreen')}>
             {({pressed}) => (
               <Text
                 style={[

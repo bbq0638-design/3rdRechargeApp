@@ -11,7 +11,5 @@ public class WebConfig {
                 .allowedMethods("GET","POST","PUT","DELETE","OPTION")
                 .allowedHeaders("*")
                 .maxAge(3600);
-
-//        테스트용 주석을 넣어봅니다
     }
 }

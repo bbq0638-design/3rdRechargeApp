@@ -7,41 +7,30 @@
     <!-- 회원가입 -->
     <insert id="insertUser" parameterType="com.recharge.user.vo.UserVO">
         INSERT INTO TB_USER (
-            USER_ID,
-            USER_PWD,
-            USER_EMAIL,
-            USER_NAME,
-            USER_NICKNAME,
-            USER_BIRTH,
-            USER_GENDER,
-            USER_PHONE,
-            USER_CARMODEL,
-            USER_ROLE,
-            DEVICE_OS,
-            DEVICE_VERSION,
-            FCM_TOKEN,
-            CREATE_DATE,
-            CREATE_ID,
-            UPDATED_DATE,
-            UPDATED_ID
+        USER_ID, USER_PWD, USER_EMAIL,
+        USER_NAME, USER_NICKNAME, USER_BIRTH,
+        USER_GENDER, USER_PHONE, USER_CARMODEL,
+        USER_ROLE, DEVICE_OS, DEVICE_VERSION,
+        FCM_TOKEN, CREATE_DATE, CREATE_ID,
+        UPDATED_DATE, UPDATED_ID
         ) VALUES (
-            #{userId},
-            #{userPwd},
-            #{userEmail},
-            #{userName},
-            #{userNickname},
-            #{userBirth},
-            #{userGender},
-            #{userPhone},
-            #{userCarModel},
-            #{userRole},
-            #{deviceOs},
-            #{deviceVersion},
-            #{fcmToken},
-            SYSDATE,
-            #{createId},
-            SYSDATE,
-            #{updatedId}
+        #{userId},
+        #{userPwd},
+        #{userEmail},
+        #{userName},
+        #{userNickname},
+        #{userBirth},
+        #{userGender},
+        #{userPhone},
+        #{userCarModel},
+        #{userRole},
+        #{deviceOs, jdbcType=VARCHAR},
+        #{deviceVersion, jdbcType=VARCHAR},
+        #{fcmToken, jdbcType=VARCHAR},
+        SYSDATE,
+        #{createId, jdbcType=VARCHAR},
+        SYSDATE,
+        #{updatedId, jdbcType=VARCHAR}
         )
     </insert>
 
@@ -58,4 +47,29 @@
         FROM TB_USER
         WHERE USER_NICKNAME = #{userNickname}
     </select>
+
+    <!-- 로그인 -->
+    <select id="getUserById" parameterType="string" resultType="com.recharge.user.vo.UserVO">
+        SELECT
+        USER_ID, USER_PWD, USER_EMAIL,
+        USER_NAME, USER_NICKNAME, USER_BIRTH,
+        USER_GENDER, USER_PHONE, USER_CARMODEL,
+        USER_ROLE, DEVICE_OS, DEVICE_VERSION,
+        FCM_TOKEN, CREATE_DATE, CREATE_ID,
+        UPDATED_DATE, UPDATED_ID
+        FROM TB_USER
+        WHERE USER_ID = #{userId}
+    </select>
+
+    <!-- 디바이스 정보 -->
+    <update id="updateDeviceInfo" parameterType="com.recharge.user.vo.UserVO">
+        UPDATE TB_USER
+        SET
+        DEVICE_OS = #{deviceOs, jdbcType=VARCHAR},
+        DEVICE_VERSION = #{deviceVersion, jdbcType=VARCHAR},
+        FCM_TOKEN = #{fcmToken, jdbcType=VARCHAR},
+        UPDATED_DATE = SYSDATE,
+        UPDATED_ID = #{updatedId, jdbcType=VARCHAR}
+        WHERE USER_ID = #{userId}
+    </update>
 </mapper>
