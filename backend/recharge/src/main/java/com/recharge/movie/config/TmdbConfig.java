@@ -48,7 +48,7 @@ public class TmdbConfig {
 
         return WebClient.builder()
                 .baseUrl(baseUrl)
-                .defaultHeader("Accept", MediaType.APPLICATION_JSON_VALUE)
+                .defaultHeader("accept", "application/json")
                 .filter(appendDefaultQueryParams) // 공통 파라미터 자동 삽입
                 .filter(logFilter) // 요청/응답 로깅
                 .build();

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useRef} from 'react';
 import {View, Text, StyleSheet, Pressable, Platform, Alert} from 'react-native';
 import TextInput from '../../components/common/TextInput';
 import Button from '../../components/common/Button';
@@ -10,20 +10,33 @@ export default function LoginScreen({navigation, route}) {
   const [userId, setUserId] = useState('');
   const [userPwd, setUserPwd] = useState('');
 
+  const passwordRef = useRef(null);
+  const submitRef = useRef(null);
+
   const {setIsLoggedIn} = route.params;
 
   const handleLogin = async () => {
     try {
-      const {token, userNickname} = await login({userId, userPwd});
+      const fcmToken = await messaging().getToken();
 
-      await AsyncStorage.setItem('authToken', token);
+      const loginData = {
+        userId,
+        userPwd,
+        deviceOs: Platform.OS,
+        deviceVersion: Platform.Version.toString(),
+        fcmToken,
+      };
 
-      Alert.alert('로그인 성공', `${userNickname}님 환영합니다.`);
+      const user = await login(loginData);
 
-      setIsLoggedIn(true); // 🔥 최상단 분기로 이동
+      await AsyncStorage.setItem('authToken', user.token);
+      await AsyncStorage.setItem('userNickname', user.userNickname);
+
+      Alert.alert('로그인 성공', `${user.userNickname}님 환영합니다.`);
+      setIsLoggedIn(true);
     } catch (error) {
       Alert.alert('로그인 실패', '아이디 또는 비밀번호를 확인해주세요.');
-      console.log('로그인 실패:', error);
+      console.log(error);
     }
   };
 
@@ -40,13 +53,18 @@ export default function LoginScreen({navigation, route}) {
           width="85%"
           value={userId}
           onChangeText={setUserId}
+          returnKeyType="next"
+          onSubmitEditing={() => passwordRef.current?.focus()}
           style={styles.idInput}
         />
         <TextInput
+          ref={passwordRef}
           placeholder="비밀번호를 입력하세요."
           width="85%"
           value={userPwd}
           onChangeText={setUserPwd}
+          returnKeyType="done"
+          onSubmitEditing={handleLogin}
           secureTextEntry
         />
 

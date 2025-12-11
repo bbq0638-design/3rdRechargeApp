@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {ScrollView, StyleSheet, View, Text} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 
@@ -8,48 +8,72 @@ import Button from '../../../components/common/Button';
 import GenreSelector from '../../../components/media/cards/GenreSelector';
 import MediaListSection from '../../../components/media/lists/MediaListsSection';
 import AiRecommendModal from '../../../components/media/contents/AiRecommendModal';
+import {fetchAllMusic} from '../../../utils/Musicapi';
 
 const MUSIC_GENRES = [
   {id: 'ALL', name: '전체'},
-  {id: 'KR', name: '국내'},
-  {id: 'US', name: '해외'},
+  {id: 'MUSIC1', name: '국내'},
+  {id: 'MUSIC2', name: '해외'},
 ];
 
 function FindMusicScreen() {
   const navigation = useNavigation();
   const [showAimodal, setShowAiModal] = useState(false);
 
-  const [dummyMusic, setDummyMusic] = useState([
-    {
-      id: 'm1',
-      title: 'Love Dive',
-      author: 'IVE',
-      image: 'https://dummyimage.com/393x393/cccccc/000000&text=Album',
-      isFavorite: false,
-    },
-    {
-      id: 'm2',
-      title: 'Hype Boy',
-      author: 'NewJeans',
-      image: 'https://dummyimage.com/393x393/cccccc/000000&text=Album',
-      isFavorite: false,
-    },
-    {
-      id: 'm3',
-      title: 'OMG',
-      author: 'NewJeans',
-      image: 'https://dummyimage.com/393x393/cccccc/000000&text=Album',
-      isFavorite: false,
-    },
-  ]);
+  const [allMusic, setAllMusic] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [loading, setLoading] = useState(true);
+  const [favoriteMap, setFavoriteMap] = useState({});
 
   const toggleFavorite = id => {
-    setDummyMusic(prev =>
+    setFavoriteMap(prev => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+
+    // 화면에 보이는 리스트에서도 갱신
+    setAllMusic(prev =>
       prev.map(item =>
         item.id === id ? {...item, isFavorite: !item.isFavorite} : item,
       ),
     );
   };
+
+  useEffect(() => {
+    loadAllMusic();
+  }, []);
+
+  const loadAllMusic = async () => {
+    try {
+      const data = await fetchAllMusic();
+
+      const formatted = data.map(m => {
+        const highRes = m.musicImagePath
+          ? m.musicImagePath.replace(/\/\d+x\d+bb\.jpg/, '/200x200bb.jpg')
+          : null;
+
+        return {
+          id: m.musicId,
+          title: m.musicTitle,
+          author: m.musicSinger,
+          image: highRes,
+          categoryId: m.commonCategoryId, // MUSIC1 / MUSIC2
+        };
+      });
+
+      setAllMusic(formatted);
+      setLoading(false);
+    } catch (err) {
+      console.log('전체 음악 로딩 실패:', err);
+      setLoading(false);
+    }
+  };
+
+  const filteredMusic =
+    selectedCategory === 'ALL'
+      ? allMusic
+      : allMusic.filter(m => m.categoryId === selectedCategory);
+
   const userMusicPosts = [
     {
       id: 'pm1',
@@ -88,14 +112,14 @@ function FindMusicScreen() {
         <GenreSelector
           genres={MUSIC_GENRES}
           onSelect={genre => {
-            console.log('선택 장르:', genre);
+            setSelectedCategory(genre.id);
           }}
         />
 
         {/* 인기 음악 spotify 이용 예정 */}
         <MediaListSection
           title="인기 음악"
-          items={dummyMusic}
+          items={filteredMusic}
           variant="musicChart"
           onFavoriteToggle={toggleFavorite}
         />

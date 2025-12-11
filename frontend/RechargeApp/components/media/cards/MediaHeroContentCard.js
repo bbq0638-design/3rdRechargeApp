@@ -6,6 +6,7 @@ import Animated, {
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
+import LoadingAnimation from '../../common/LoadingAnimation';
 
 /**
  * HomeContentCard : 영화/음악 최상단 카드
@@ -14,8 +15,18 @@ import Animated, {
  * @param {String} sybtitle - 서브타이틀
  */
 
-function MediaHomeContentCard({posters = [], title, subtitle}) {
-  const HeroPoster = 'https://dummyimage.com/393x590/cccccc/000000&text=Poster';
+function MediaHomeContentCard({posters = [], title, subtitle, loading}) {
+  // 로딩 화면
+  if (loading || posters.length === 0) {
+    return (
+      <View style={styles.card}>
+        <View style={styles.loadingBox}>
+          <LoadingAnimation style={{width: '100%', aspectRatio: 1 / 1.5}} />
+        </View>
+      </View>
+    );
+  }
+
   // 포스터 useState
   const [index, setIndex] = useState(0);
 
@@ -29,6 +40,8 @@ function MediaHomeContentCard({posters = [], title, subtitle}) {
 
   //   3초 간격 포스터 전환
   useEffect(() => {
+    if (posters.length === 0) return;
+
     const interval = setInterval(() => {
       fade.value = withTiming(0, {duration: 500}, () => {
         runOnJS(changePoster)();
@@ -36,7 +49,7 @@ function MediaHomeContentCard({posters = [], title, subtitle}) {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [posters]);
 
   const changePoster = () => {
     // 다음 포스터 변경
@@ -88,7 +101,7 @@ const styles = StyleSheet.create({
 
   poster: {
     width: '100%',
-    aspectRatio: 1 / 1.3,
+    aspectRatio: 1 / 1.5,
     backgroundColor: '#eee',
   },
   textBox: {

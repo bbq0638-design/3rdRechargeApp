@@ -4,9 +4,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 
 @Configuration
 @EnableWebSecurity
@@ -19,24 +21,46 @@ public class SecurityConfig {
     }
 
     @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter(jwtTokenProvider);
+    }
+
+    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // 로그인/회원가입은 인증 없이 허용
                         .requestMatchers("/api/user/login",
                                 "/api/user/signup",
                                 "/api/user/check-id",
-                                "/api/user/check-nickname"
+                                "/api/user/check-nickname",
+                                "/api/user/find-id",
+                                "/api/user/find-password",
+                                "/api/user/reset-password",
+                                "/api/user/send-email-auth",
+                                "/api/user/verify-email"
                         ).permitAll()
-                        // 이외 요청은 인증 필요
+
+                        .requestMatchers("/api/movie/**").authenticated()
+
                         .anyRequest().authenticated()
                 )
+
                 .formLogin(form -> form.disable())
-                // JWT 필터 적용
+
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
-                        UsernamePasswordAuthenticationFilter.class);
+                        UsernamePasswordAuthenticationFilter.class)
+
+                // 💜 SecurityContext 유지
+                .securityContext(context ->
+                        context.securityContextRepository(new HttpSessionSecurityContextRepository())
+                )
+
+                // ⭐⭐ 세션 생성을 허용해야 유지됨!
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS)
+                );
 
         return http.build();
     }

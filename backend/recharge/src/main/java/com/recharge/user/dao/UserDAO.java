@@ -14,4 +14,24 @@ public interface UserDAO {
     UserVO getUserById(String userId);
 
     int updateDeviceInfo(UserVO user);
+
+    String findUserId(UserVO user);
+
+    UserVO findUserForPasswordReset(UserVO user);
+
+    int updateResetToken (UserVO user);
+
+    UserVO getUserByResetToken (String resetToken);
+
+    int updateUserPassword (UserVO user);
+
+    int checkUserEmail(String userEmail);
+
+    int updateEmailAuthCode(UserVO user);
+
+    UserVO getUserByEmailAuthCode(UserVO user);
+
+    int verifyUserEmail(UserVO user);
+
+    int updateUserAfterEmailVerified(UserVO user);
 }

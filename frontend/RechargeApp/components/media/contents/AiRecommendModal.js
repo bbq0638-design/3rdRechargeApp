@@ -157,7 +157,9 @@ function AiRecommendModal({
         />
 
         {/* 결과 */}
-        <ScrollView contentContainerStyle={styles.results}>
+        <ScrollView
+          contentContainerStyle={styles.results}
+          showsVerticalScrollIndicator={false}>
           {loading ? (
             <LoadingAnimation size={90} />
           ) : items.length > 0 ? (
@@ -196,21 +198,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    maxHeight: '60%',
   },
+
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+
   title: {fontSize: 20, fontWeight: '700'},
+
   tabs: {flexDirection: 'row', marginTop: 20},
+
   results: {marginTop: 20, paddingBottom: 20},
+
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: 16,
   },
+
   empty: {textAlign: 'center', color: '#777', fontSize: 15},
 });
 

@@ -25,5 +25,13 @@ public class UserVO {
     private Date updatedDate;
     private String updatedId;
 
-    private String token;
+    private String token; //JWT 토큰
+
+    private String resetToken;  // 비밀번호 리셋 토큰
+    private Date tokenExpire;   // 비밀번호 리셋 유효시간
+
+    // 🔥 이메일 인증 관련
+    private String emailVerified;    // 'Y' = 인증됨 / 'N' = 미인증
+    private String emailAuthCode;    // 이메일 인증 토큰
+    private Date emailAuthExpire;    // 인증 유효시간
 }

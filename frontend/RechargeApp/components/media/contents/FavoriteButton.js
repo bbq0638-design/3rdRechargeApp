@@ -44,12 +44,13 @@ export default function FavoriteButton({
     return (
       <TouchableOpacity
         onPress={onPress}
-        style={[styles.overlayBtn, style]}
-        hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
+        style={[styles.overlayBtnNew, style, {backgroundColor: '#004e89'}]}
+        activeOpacity={0.9}
+        hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
         <MaterialCommunityIcons
-          name={isFavorite ? 'star' : 'star'}
-          size={28}
-          color={isFavorite ? COLORS.yellow : COLORS.white}
+          name={isFavorite ? 'star' : 'star-outline'}
+          size={20}
+          color={isFavorite ? COLORS.yellow : '#F5F5F5'}
         />
       </TouchableOpacity>
     );
@@ -61,8 +62,8 @@ export default function FavoriteButton({
       ? COLORS.primaryDark
       : COLORS.border
     : isFavorite
-    ? COLORS.primary
-    : COLORS.white;
+      ? COLORS.primary
+      : COLORS.white;
 
   const textColor = isFavorite ? COLORS.white : COLORS.text;
   const iconColor = isFavorite ? COLORS.yellow : COLORS.primary;
@@ -127,10 +128,13 @@ const styles = StyleSheet.create({
   },
 
   /** overlaySmall */
-  overlayBtn: {
+  overlayBtnNew: {
     position: 'absolute',
     top: 6,
     right: 6,
     padding: 4,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

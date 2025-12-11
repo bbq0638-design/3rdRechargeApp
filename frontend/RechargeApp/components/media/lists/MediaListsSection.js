@@ -1,53 +1,71 @@
 import React from 'react';
 import {View, Text, ScrollView, StyleSheet} from 'react-native';
 import MediaCards from '../cards/MediaCards';
+import Button from '../../common/Button';
+import LoadingAnimation from '../../common/LoadingAnimation';
 
 export default function MediaListSection({
   title,
   items = [],
   variant = 'movie', // 'movie' | 'music' | 'post'
+  loading = false,
   onPressItem,
   onFavoriteToggle,
+  onRecommendPress,
 }) {
-  // 데이터가 없으면 섹션 자체를 숨김
-  if (!items || items.length === 0) return null;
-
   return (
     <View style={styles.container}>
       {/* 섹션 제목 */}
       <Text style={styles.sectionTitle}>{title}</Text>
 
       {/* 가로 스크롤 카드 리스트 */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContainer}>
-        {items.map(item => (
-          <MediaCards
-            key={item.id}
-            title={item.title || item.name}
-            author={item.author} // 사용자 추천글에서 사용
-            image={
-              variant === 'movie'
-                ? `https://image.tmdb.org/t/p/w500${
-                    item.poster_path ?? item.image
-                  }`
-                : item.image
-            }
-            variant={variant}
-            isFavorite={item.isFavorite} // ⭐ 내려주기
-            onFavoriteToggle={() => onFavoriteToggle(item.id)}
-            onPress={() => onPressItem?.(item)}
+      {loading ? (
+        <View style={{paddingVertical: 30}}>
+          <LoadingAnimation size={100} />
+        </View>
+      ) : !items || items.length === 0 ? (
+        <View style={styles.emptyBox}>
+          <Text style={styles.emptyText}>
+            현재 해당 장르는 인기가 없어요 😢
+          </Text>
+
+          <Button
+            type="submit"
+            text="추천하러 가기"
+            height={44}
+            onPress={onRecommendPress}
           />
-        ))}
-      </ScrollView>
+        </View>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContainer}>
+          {items.map(item => (
+            <MediaCards
+              key={item.id}
+              title={item.title || item.name}
+              author={item.author}
+              image={
+                variant === 'movie'
+                  ? `https://image.tmdb.org/t/p/w500${item.poster_path ?? item.image}`
+                  : item.image
+              }
+              variant={variant}
+              isFavorite={item.isFavorite}
+              onFavoriteToggle={() => onFavoriteToggle?.(item.id)}
+              onPress={() => onPressItem?.(item)}
+            />
+          ))}
+        </ScrollView>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 10,
+    marginTop: 18,
   },
   sectionTitle: {
     fontSize: 20,
@@ -59,5 +77,20 @@ const styles = StyleSheet.create({
   scrollContainer: {
     paddingLeft: 10,
     paddingRight: 4,
+  },
+
+  emptyBox: {
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    marginTop: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 219,
+  },
+
+  emptyText: {
+    fontSize: 20,
+    color: '#333',
+    marginBottom: 40,
   },
 });

@@ -1,9 +1,39 @@
-import React from 'react';
-import {View, Text, StyleSheet, Pressable} from 'react-native';
+import React, {useState} from 'react';
+import {View, Text, StyleSheet, Pressable, Alert} from 'react-native';
 import TextInput from '../../components/common/TextInput';
 import Button from '../../components/common/Button';
+import {findPassword} from '../../utils/api';
 
 export default function FindPwdScreen({navigation}) {
+  const [userId, setUserId] = useState('');
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+
+  const handleFindPwd = async () => {
+    if (!userId || !userName || !userEmail) {
+      Alert.alert('입력 오류', '모든 정보를 입력해주세요.');
+      return;
+    }
+
+    try {
+      const req = {
+        userId,
+        userName,
+        userEmail,
+      };
+
+      const res = await findPassword(req);
+
+      Alert.alert('메일 전송 완료', '비밀번호 재설정 링크를 보냈습니다.', [
+        {
+          text: '확인',
+          onPress: () => navigation.navigate('FindPwdResult'),
+        },
+      ]);
+    } catch (error) {
+      Alert.alert('오류', error);
+    }
+  };
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -13,24 +43,27 @@ export default function FindPwdScreen({navigation}) {
         </Text>
       </View>
 
-      
       <View style={styles.centerBox}>
-
         <TextInput
           placeholder="아이디를 입력하세요."
           width="85%"
+          value={userId}
+          onChangeText={setUserId}
           style={styles.idInput}
         />
 
         <TextInput
           placeholder="이름을 입력하세요."
           width="85%"
+          value={userName}
+          onChangeText={setUserName}
           style={styles.idInput}
         />
         <TextInput
           placeholder="이메일을 입력하세요."
           width="85%"
-          secureTextEntry={true}
+          value={userEmail}
+          onChangeText={setUserEmail}
         />
 
         <Button
@@ -38,7 +71,7 @@ export default function FindPwdScreen({navigation}) {
           type="submit"
           width="85%"
           style={{marginTop: 25}}
-          onPress={() => navigation.navigate('FindPwdResult')}
+          onPress={handleFindPwd}
         />
       </View>
     </View>

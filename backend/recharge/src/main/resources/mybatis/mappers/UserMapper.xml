@@ -38,14 +38,14 @@
     <select id="checkUserId" resultType="int">
         SELECT COUNT(*)
         FROM TB_USER
-        WHERE USER_ID = #{userId}
+        WHERE USER_ID = #{userId,jdbcType=VARCHAR}
     </select>
 
     <!-- 닉네임 중복 체크 -->
     <select id="checkUserNickName" resultType="int">
         SELECT COUNT(*)
         FROM TB_USER
-        WHERE USER_NICKNAME = #{userNickname}
+        WHERE USER_NICKNAME = #{userNickname,jdbcType=VARCHAR}
     </select>
 
     <!-- 로그인 -->
@@ -72,4 +72,144 @@
         UPDATED_ID = #{updatedId, jdbcType=VARCHAR}
         WHERE USER_ID = #{userId}
     </update>
+
+    <!--아이디 찾기 -->
+    <select id="findUserId" parameterType="com.recharge.user.vo.UserVO" resultType="String">
+        SELECT USER_ID
+        FROM TB_USER
+        WHERE USER_NAME = #{userName}
+        AND USER_EMAIL= #{userEmail}
+    </select>
+
+    <!-- 비밀번호 찾기 : 유저 확인 -->
+    <select id="findUserForPasswordReset" parameterType="com.recharge.user.vo.UserVO" resultType="com.recharge.user.vo.UserVO">
+        SELECT
+        USER_ID, USER_EMAIL, USER_NAME,
+        RESET_TOKEN, TOKEN_EXPIRE
+        FROM TB_USER
+        WHERE USER_ID = #{userId}
+        AND USER_NAME = #{userName}
+        AND USER_EMAIL = #{userEmail}
+    </select>
+
+
+    <!-- 비밀번호 재설정 토큰 저장 -->
+    <update id="updateResetToken" parameterType="com.recharge.user.vo.UserVO">
+        UPDATE TB_USER
+        SET RESET_TOKEN = #{resetToken},
+        TOKEN_EXPIRE = #{tokenExpire},
+        UPDATED_DATE = SYSDATE,
+        UPDATED_ID = #{userId}
+        WHERE USER_ID = #{userId}
+        AND USER_EMAIL = #{userEmail}
+    </update>
+
+
+    <!-- 토큰으로 사용자 조회 (유효성 검사 포함) -->
+    <select id="getUserByResetToken" parameterType="string" resultType="com.recharge.user.vo.UserVO">
+        SELECT USER_ID, USER_EMAIL,
+        RESET_TOKEN, TOKEN_EXPIRE
+        FROM TB_USER
+        WHERE RESET_TOKEN = #{resetToken}
+        AND TOKEN_EXPIRE > SYSDATE    <!-- 🔥 유효기간 검증 -->
+    </select>
+
+
+    <!-- 비밀번호 변경 (토큰 사용 후 삭제) -->
+    <update id="updateUserPassword" parameterType="com.recharge.user.vo.UserVO">
+        UPDATE TB_USER
+        SET USER_PWD = #{userPwd},
+        RESET_TOKEN = NULL,
+        TOKEN_EXPIRE = NULL,
+        UPDATED_DATE = SYSDATE,
+        UPDATED_ID = #{userId}
+        WHERE USER_ID = #{userId}
+    </update>
+
+    <!-- 이메일 중복 체크 -->
+    <select id="checkUserEmail" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_USER
+        WHERE USER_EMAIL = #{userEmail,jdbcType=VARCHAR}
+    </select>
+
+    <update id="updateEmailAuthCode" parameterType="com.recharge.user.vo.UserVO">
+        MERGE INTO TB_USER u
+        USING (SELECT #{userEmail} AS USER_EMAIL FROM dual) d
+        ON (u.USER_EMAIL = d.USER_EMAIL)
+        WHEN MATCHED THEN UPDATE SET
+        EMAIL_AUTH_CODE = #{emailAuthCode},
+        EMAIL_AUTH_EXPIRE = #{emailAuthExpire},
+        UPDATED_DATE = SYSDATE,
+        UPDATED_ID = #{userEmail}
+        WHEN NOT MATCHED THEN
+        INSERT (
+        USER_EMAIL,
+        USER_PWD,
+        USER_NAME,
+        USER_NICKNAME,
+        USER_BIRTH,
+        USER_ROLE,
+        EMAIL_AUTH_CODE,
+        EMAIL_AUTH_EXPIRE,
+        CREATE_DATE,
+        CREATE_ID
+        )
+        VALUES (
+        #{userEmail},
+        'TEMP',
+        'TEMP',
+        'TEMP',
+        '19900101',
+        'TEMP',
+        #{emailAuthCode},
+        #{emailAuthExpire},
+        SYSDATE,
+        #{userEmail}
+        )
+    </update>
+
+
+
+
+    <!-- 인증 코드 확인 -->
+    <select id="getUserByEmailAuthCode" parameterType="com.recharge.user.vo.UserVO"
+            resultType="com.recharge.user.vo.UserVO">
+        SELECT USER_ID, USER_EMAIL, EMAIL_VERIFIED
+        FROM TB_USER
+        WHERE EMAIL_AUTH_CODE = #{emailAuthCode}
+        AND USER_EMAIL = #{userEmail}
+        AND EMAIL_AUTH_EXPIRE > SYSDATE
+    </select>
+
+    <!-- 이메일 인증 완료 -->
+    <update id="verifyUserEmail" parameterType="com.recharge.user.vo.UserVO">
+        UPDATE TB_USER
+        SET EMAIL_VERIFIED = 'Y',
+        EMAIL_AUTH_CODE = NULL,
+        EMAIL_AUTH_EXPIRE = NULL,
+        UPDATED_DATE = SYSDATE,
+        UPDATED_ID = #{userEmail}
+        WHERE USER_EMAIL = #{userEmail}
+    </update>
+
+    <!-- 이메일 인증 후 최종 유저 정보 업데이트 -->
+    <update id="updateUserAfterEmailVerified" parameterType="com.recharge.user.vo.UserVO">
+        UPDATE TB_USER
+        SET USER_ID = #{userId},
+        USER_PWD = #{userPwd},
+        USER_NAME = #{userName},
+        USER_NICKNAME = #{userNickname},
+        USER_BIRTH = #{userBirth},
+        USER_GENDER = #{userGender},
+        USER_PHONE = #{userPhone},
+        USER_CARMODEL = #{userCarModel},
+        USER_ROLE = 'USER',
+        UPDATED_DATE = SYSDATE,
+        UPDATED_ID = #{updatedId}
+        WHERE USER_EMAIL = #{userEmail}
+        AND EMAIL_VERIFIED = 'Y'
+    </update>
+
+
 </mapper>

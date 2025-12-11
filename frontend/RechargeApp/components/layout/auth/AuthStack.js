@@ -7,6 +7,9 @@ import FindPwdScreen from '../../../screens/auth/FindPwdScreen';
 import TermsAgreementScreen from '../../../screens/auth/TermsAgreementScreen';
 import SignUpScreen from '../../../screens/auth/SignUpScreen';
 import FindIdResultScreen from '../../../screens/auth/FindIdResultScreen';
+import FindPwdResultScreen from '../../../screens/auth/FindPwdResultScreen';
+import ModifyPwdScreen from '../../../screens/auth/ModifyPwdScreen';
+import VerifyEmailScreen from '../../../screens/auth/VerifyEmailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -27,6 +30,9 @@ export default function AuthStack({setIsLoggedIn}) {
       />
       <Stack.Screen name="SignUpScreen" component={SignUpScreen} />
       <Stack.Screen name="FindIdResult" component={FindIdResultScreen} />
+      <Stack.Screen name="FindPwdResult" component={FindPwdResultScreen} />
+      <Stack.Screen name="ResetPwd" component={ModifyPwdScreen} />
+      <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
     </Stack.Navigator>
   );
 }

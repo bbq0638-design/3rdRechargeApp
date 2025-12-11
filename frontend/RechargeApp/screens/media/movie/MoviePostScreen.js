@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -7,25 +7,43 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import axios from 'axios';
+import {useNavigation, useRoute} from '@react-navigation/native';
 
 import MediaSearchBar from '../../../components/media/contents/MediaSearchBar';
 import MovieInfo from '../../../components/media/contents/MovieInfo';
 import LoadingAnimation from '../../../components/common/LoadingAnimation';
 import Button from '../../../components/common/Button';
 import TextArea from '../../../components/common/TextArea';
-
-const TMDB_API_KEY = '6df9f08c130ae1944d95264798f87686';
+import {
+  fetchMovieDetail,
+  createMoviePost,
+  fetchMoviePostDetail,
+  updateMoviePost,
+} from '../../../utils/Movieapi';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function MoviePostScreen() {
+  const route = useRoute();
+  const navigation = useNavigation();
+
+  // 수정 모드 확인
+  const {postId = null, editMode = false} = route.params ?? {};
+
   const [selectedMovie, setSelectedMovie] = useState(null);
+  const [selectedMovieId, setSelectedMovieId] = useState(null);
+
   const [loading, setLoading] = useState(false);
   const [reason, setReason] = useState('');
+  const [userId, setUserId] = useState(null);
+
   const fadeAnim = useState(new Animated.Value(0))[0];
 
   const isSubmitDisabled = !selectedMovie || !reason.trim();
 
+  // 선택 애니메이션
   useEffect(() => {
     if (!selectedMovie) {
       Animated.timing(fadeAnim, {
@@ -36,36 +54,111 @@ export default function MoviePostScreen() {
     }
   }, [selectedMovie]);
 
-  const fetchMovieDetail = async movieId => {
+  // 아이디 가져오기
+  useEffect(() => {
+    const loadUserId = async () => {
+      const id = await AsyncStorage.getItem('userId');
+      setUserId(id);
+    };
+    loadUserId();
+  }, []);
+
+  // 수정 모드일 경우 기존 게시글 데이터 불러오기
+  useEffect(() => {
+    if (editMode && postId) {
+      loadPostData(postId);
+    }
+  }, [editMode, postId]);
+
+  // 기존 글 불러와서 input을 채워보아요
+  const loadPostData = async id => {
     try {
       setLoading(true);
 
-      const res = await axios.get(
-        `https://api.themoviedb.org/3/movie/${movieId}`,
-        {
-          params: {
-            api_key: TMDB_API_KEY,
-            language: 'ko-KR',
-            append_to_response: 'credits',
-          },
-        },
-      );
+      const post = await fetchMoviePostDetail(id);
 
-      const detail = res.data;
-
-      const director =
-        detail.credits.crew.find(p => p.job === 'Director')?.name ||
-        '정보 없음';
-
-      const actors =
-        detail.credits.cast
-          .slice(0, 5)
-          .map(a => a.name)
-          .join(', ') || '정보 없음';
-
-      return {...detail, director, actors};
+      setSelectedMovieId(post.movieId);
+      setSelectedMovie(mapMovieData(post));
+      setReason(post.moviePostText);
+    } catch (err) {
+      console.log('게시글 로드 실패:', err);
     } finally {
       setLoading(false);
+    }
+  };
+  // api -> movieinfo 구조로 변환
+  const mapMovieData = data => ({
+    title: data.movieTitle,
+    poster_path: data.moviePoster,
+    vote_average: data.movieScore,
+    overview: data.movieComment,
+    release_date: data.movieDate,
+    director: data.movieDirector,
+    actors: data.movieActor,
+    genres: data.genreName ? [{name: data.genreName}] : [],
+  });
+
+  /* 백엔드 상세 호출 */
+  const loadMovieDetail = async movieId => {
+    try {
+      setLoading(true);
+      const detail = await fetchMovieDetail(movieId);
+      return mapMovieData(detail); // ⭐ 변환 적용
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 검색한 영화 선택
+  const handleMovieSelect = useCallback(
+    async movie => {
+      const id = movie.movieId ?? movie.id;
+      setSelectedMovieId(id);
+
+      const detail = await loadMovieDetail(id);
+      setSelectedMovie(detail);
+    },
+    [loadMovieDetail],
+  );
+  // 게시글 등록
+  const handleSubmit = async () => {
+    if (editMode) {
+      // 수정(update)
+      try {
+        await updateMoviePost(postId, {
+          movieId: selectedMovieId,
+          moviePostTitle: selectedMovie.title,
+          moviePostText: reason,
+          updatedId: userId,
+        });
+
+        Alert.alert('수정 완료', '게시글이 수정되었습니다.');
+
+        navigation.push('MovieDetail', {
+          movieId: postId,
+          type: 'post',
+        });
+      } catch (err) {
+        console.log('수정 실패:', err);
+      }
+      return;
+    }
+
+    // 신규 등록(create)
+    try {
+      const newPostId = await createMoviePost({
+        userId,
+        movieId: selectedMovieId,
+        moviePostTitle: selectedMovie.title,
+        moviePostText: reason,
+      });
+
+      navigation.navigate('MovieDetail', {
+        movieId: newPostId,
+        type: 'post',
+      });
+    } catch (err) {
+      console.log('등록 실패:', err);
     }
   };
 
@@ -73,20 +166,16 @@ export default function MoviePostScreen() {
     <KeyboardAvoidingView
       style={{flex: 1}}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      {/* 🔥 검색창 + 드롭다운 (상단 고정) */}
+      {/* 고정된 검색창 */}
       <View style={styles.searchWrapper}>
         <MediaSearchBar
           type="movie"
           placeholder="영화 제목을 검색하세요"
           hideResults={false}
-          onSelect={async movie => {
-            const detail = await fetchMovieDetail(movie.id);
-            setSelectedMovie(detail);
-          }}
+          onSelect={handleMovieSelect}
         />
       </View>
 
-      {/* 🔥 나머지 화면 */}
       <ScrollView
         style={{flex: 1}}
         contentContainerStyle={styles.content}
@@ -108,7 +197,7 @@ export default function MoviePostScreen() {
         {/* 영화 상세 */}
         {!loading && selectedMovie && (
           <View style={{marginTop: 20}}>
-            <MovieInfo movie={selectedMovie} isPost={false} />
+            <MovieInfo movie={selectedMovie} viewType="postWrite" />
 
             <Button
               type="submit"
@@ -119,7 +208,6 @@ export default function MoviePostScreen() {
                 setReason('');
               }}
               style={{marginBottom: 16}}
-              textStyle={{fontSize: 15}}
             />
           </View>
         )}
@@ -139,12 +227,10 @@ export default function MoviePostScreen() {
         {/* 제출 */}
         <Button
           type="submit"
-          text="추천글 등록하기"
+          text={editMode ? '게시글 수정하기' : '추천글 등록하기'}
           height={48}
           disabled={isSubmitDisabled}
-          onPress={() => {
-            console.log('제출!', {selectedMovie, reason});
-          }}
+          onPress={handleSubmit}
           style={{marginTop: 20, marginBottom: 40}}
         />
       </ScrollView>

@@ -1,9 +1,28 @@
-import React from 'react';
-import {View, Text, StyleSheet, Pressable} from 'react-native';
+import React, {useState} from 'react';
+import {View, Text, StyleSheet, Pressable, Alert} from 'react-native';
 import TextInput from '../../components/common/TextInput';
 import Button from '../../components/common/Button';
+import {findUserId} from '../../utils/api';
 
 export default function FindIdScreen({navigation}) {
+  const [userEmail, setUserEmail] = useState('');
+  const [userName, setUserName] = useState('');
+
+  const handleFindId = async () => {
+    if (!userName || !userEmail) {
+      Alert.alert('오류', '이름과 이메일을 입력해주세요.');
+      return;
+    }
+
+    try {
+      const response = await findUserId({userName, userEmail});
+      Alert.alert('안내', response);
+      navigation.navigate('FindIdResult');
+    } catch (err) {
+      Alert.alert('실패', err);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -18,18 +37,21 @@ export default function FindIdScreen({navigation}) {
           placeholder="이름을 입력하세요."
           width="85%"
           style={styles.idInput}
+          value={userName}
+          onChangeText={setUserName}
         />
         <TextInput
           placeholder="이메일을 입력하세요."
           width="85%"
-          secureTextEntry={true}
+          value={userEmail}
+          onChangeText={setUserEmail}
         />
         <Button
           text="아이디 찾기"
           type="submit"
           width="85%"
           style={{marginTop: 25}}
-          onPress={() => navigation.navigate('FindIdResult')}
+          onPress={handleFindId}
         />
       </View>
     </View>

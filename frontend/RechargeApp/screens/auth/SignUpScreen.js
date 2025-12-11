@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  Pressable,
   TouchableOpacity,
   Modal,
   Alert,
@@ -12,9 +11,14 @@ import {
 import Button from '../../components/common/Button';
 import TextInput from '../../components/common/TextInput';
 import SelectableButton from '../../components/common/SelectableButton';
-import {signup, checkUserId, checkUserNickname} from '../../utils/api';
+import {
+  signup,
+  checkUserId,
+  checkUserNickname,
+  sendEmailAuth,
+} from '../../utils/api';
 
-export default function SignUpScreen({navigation}) {
+export default function SignUpScreen({navigation, route}) {
   const [userEmail, setUserEmail] = useState('');
   const [userGender, setUserGender] = useState('');
   const [userId, setUserId] = useState('');
@@ -24,6 +28,8 @@ export default function SignUpScreen({navigation}) {
   const [userBirth, setUserBirth] = useState('');
   const [userPhone, setUserPhone] = useState('');
   const [userCarModel, setUserCarModel] = useState('');
+
+  const [emailVerified, setEmailVerified] = useState(false); // 🔥 추가
 
   const [phonePrefix, setPhonePrefix] = useState('010');
   const [showPhoneDropdown, setShowPhoneDropdown] = useState(false);
@@ -39,7 +45,15 @@ export default function SignUpScreen({navigation}) {
   const nameRef = useRef(null);
   const nicknameRef = useRef(null);
   const birthRef = useRef(null);
-  const phoneRef = useRef(null);
+
+  React.useEffect(() => {
+    if (route?.params?.emailVerified) {
+      setEmailVerified(true);
+      if (route?.params?.userEmail) {
+        setUserEmail(route.params.userEmail); // 이메일 유지
+      }
+    }
+  }, [route]);
 
   const phonePrefixOptions = ['010', '011', '016', '017', '018', '019'];
 
@@ -55,6 +69,10 @@ export default function SignUpScreen({navigation}) {
       return Alert.alert('알림', '필수 입력 값을 입력해주세요.');
     }
 
+    if (!emailVerified) {
+      return Alert.alert('경고', '이메일 인증을 완료해주세요!');
+    }
+
     const userData = {
       userId,
       userPwd,
@@ -66,6 +84,7 @@ export default function SignUpScreen({navigation}) {
       userPhone: phonePrefix + userPhone,
       userCarModel,
       createId: userId,
+      emailVerified: 'Y', // 🔥 핵심 추가!
     };
 
     try {
@@ -118,8 +137,6 @@ export default function SignUpScreen({navigation}) {
           value={userPwd}
           onChangeText={setUserPwd}
           style={{marginTop: 20}}
-          returnKeyType="next"
-          onSubmitEditing={() => emailRef.current?.focus()}
         />
       </View>
 
@@ -129,25 +146,42 @@ export default function SignUpScreen({navigation}) {
           width={'75%'}
           label="이메일"
           value={userEmail}
-          onChangeText={setUserEmail}
+          onChangeText={text => {
+            setUserEmail(text);
+            setEmailVerified(false); // 🔥 이메일 변경 시 인증 초기화
+          }}
           placeholder="이메일을 입력하세요"
-          errorMessage={
-            !userEmail.includes('@') && userEmail
-              ? '올바른 이메일 형식이 아닙니다.'
-              : ''
-          }
           style={{marginTop: 20}}
-          returnKeyType="next"
-          onSubmitEditing={() => nameRef.current?.focus()}
         />
 
-        <Button
-          text="인증하기"
-          type="submit"
-          width={65}
-          fontSize={12}
-          style={styles.checkEmailBtn}
-        />
+        {emailVerified ? (
+          <Text style={{color: 'green', fontSize: 12, marginLeft: 6}}>
+            ✓ 인증완료
+          </Text>
+        ) : (
+          <Button
+            text="인증하기"
+            type="submit"
+            width={65}
+            fontSize={12}
+            style={styles.checkEmailBtn}
+            onPress={async () => {
+              if (!userEmail.includes('@')) {
+                return Alert.alert('알림', '올바른 이메일을 입력해주세요.');
+              }
+
+              try {
+                const result = await sendEmailAuth(userEmail);
+                if (result === false) {
+                  return Alert.alert('실패', '이미 존재하는 이메일입니다.');
+                }
+                Alert.alert('메일 전송 완료', '메일을 확인해주세요!');
+              } catch (err) {
+                Alert.alert('실패', err);
+              }
+            }}
+          />
+        )}
       </View>
 
       <View style={styles.inputWithButton}>
@@ -299,7 +333,12 @@ export default function SignUpScreen({navigation}) {
         <Button
           text="회원가입"
           type="submit"
-          style={{marginTop: 50, marginBottom: 20}}
+          disabled={!emailVerified} // 🔐 인증 전에는 비활성화!
+          style={{
+            marginTop: 50,
+            marginBottom: 20,
+            opacity: emailVerified ? 1 : 0.5,
+          }}
           onPress={handleSignup}
         />
       </View>

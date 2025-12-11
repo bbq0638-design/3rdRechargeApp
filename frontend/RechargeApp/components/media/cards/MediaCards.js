@@ -12,28 +12,19 @@ const MediaCards = ({
   variant,
   isFavorite = false,
   onFavoriteToggle,
-  onPreview,
   style,
 }) => {
   if (variant === 'musicChart') {
     return (
       <View style={[styles.card, styles.chartCard, style]}>
-        {/* 앨범아트 + 즐겨찾기 */}
+        {/* 앨범아트 */}
         <View style={styles.imageWrapper}>
           <Image source={{uri: image}} style={styles.chartImage} />
-
-          <View style={styles.favoriteWrapper}>
-            <FavoriteButton
-              type="overlaySmall"
-              isFavorite={isFavorite}
-              onPress={onFavoriteToggle}
-            />
-          </View>
         </View>
 
         {/* 2열 구조 */}
         <View style={styles.rowWrapper}>
-          {/* 왼쪽: 제목 + 가수 (2행) */}
+          {/* 왼쪽: 제목 + 가수 */}
           <View style={styles.leftColumn}>
             <Text style={styles.titleText} numberOfLines={1}>
               {title}
@@ -43,13 +34,12 @@ const MediaCards = ({
             </Text>
           </View>
 
-          {/* 오른쪽: 미리듣기 아이콘 (1행+2행 전체 중앙에 위치) */}
+          {/* 오른쪽: FavoriteButton 옮김 */}
           <View style={styles.rightColumn}>
-            <IconButton
-              type="play"
-              size={26}
-              color="#004E89"
-              onPress={onPreview}
+            <FavoriteButton
+              type="overlaySmall"
+              isFavorite={isFavorite}
+              onPress={onFavoriteToggle}
             />
           </View>
         </View>

@@ -15,7 +15,7 @@ import CustomTextInput from '../../common/TextInput';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LoadingAnimation from '../../common/LoadingAnimation';
 import MediaDropModal from './MediaDropModal';
-
+import {searchMovies} from '../../../utils/Movieapi';
 
 function MediaSearchBar({
   type = 'movie',
@@ -45,17 +45,8 @@ function MediaSearchBar({
       setLoading(true);
 
       if (type === 'movie') {
-        const res = await axios.get(
-          `https://api.themoviedb.org/3/search/movie`,
-          {
-            params: {
-              api_key: TMDB_API_KEY,
-              language: 'ko-KR',
-              query: text,
-            },
-          },
-        );
-        setResults(res.data.results.slice(0, 5));
+        const data = await searchMovies(text);
+        setResults(data.slice(0, 5));
       }
 
       if (type === 'music') {
@@ -143,16 +134,16 @@ function MediaSearchBar({
         left={dropdownPos.left}
         width={dropdownPos.width}
         options={results.map(r => ({
-          label: type === 'movie' ? r.title : r.trackName,
-          sub: type === 'movie' ? r.release_date : r.artistName,
+          label: type === 'movie' ? r.movieTitle : r.trackName,
+          sub: type === 'movie' ? r.movieDate : r.artistName,
           thumbnail:
             type === 'movie'
-              ? r.poster_path
-                ? `https://image.tmdb.org/t/p/w92${r.poster_path}`
+              ? r.moviePoster
+                ? r.moviePoster
                 : 'https://via.placeholder.com/92x138'
               : r.artworkUrl100,
-          onPress: () => handleSelect(r), // 여기서 선택 처리
-        }))}
+          onPress: () => handleSelect(r),
+        }))} // 여기서 선택 처리
       />
     </View>
   );

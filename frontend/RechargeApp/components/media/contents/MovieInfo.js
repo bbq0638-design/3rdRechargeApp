@@ -15,9 +15,9 @@ import UserPostActionBar from '../../common/UserPostActionBar';
 
 function MovieInfo({
   movie,
+  viewType = 'movie',
   isMine = false,
   isAdmin = false,
-  isPost = false,
   onEdit,
   onDelete,
   onReport,
@@ -26,21 +26,28 @@ function MovieInfo({
 
   const posterUrl = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
 
+  const showOverview = viewType !== 'postWrite';
+
+  const showActionBar = viewType === 'postDetail';
+
   return (
     <View style={styles.container}>
       <View style={styles.titleRow}>
         {/* 제목 */}
-        <Text style={styles.title}>{movie.title}</Text>
+        <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+          {movie.title}
+        </Text>
         {/* 게시글 액션 버튼 */}
-        <UserPostActionBar
-          isPost={isPost}
-          isMine={isMine}
-          isAdmin={isAdmin}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onReport={onReport}
-          style={styles.actionRow}
-        />
+        {showActionBar && (
+          <UserPostActionBar
+            isMine={isMine}
+            isAdmin={isAdmin}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onReport={onReport}
+            style={styles.actionRow}
+          />
+        )}
       </View>
 
       {/* 포스터 + 오른쪽 정보 */}
@@ -88,16 +95,14 @@ function MovieInfo({
             </View>
 
             {/* 개봉일 */}
-            <View style={styles.chipRow}>
+            <View style={styles.releaseRow}>
               <MaterialCommunityIcons
                 name="calendar-month"
-                size={16}
+                size={18}
                 color="#004e89"
               />
-              <Text style={styles.chipText}>
-                {movie.release_date
-                  ? `${movie.release_date.slice(0, 4)}년작`
-                  : '정보 없음'}
+              <Text style={styles.releaseText}>
+                {`${movie.release_date.slice(0, 4)}년 ${movie.release_date.slice(5, 7)}월 ${movie.release_date.slice(8, 10)}일 개봉`}
               </Text>
             </View>
 
@@ -133,7 +138,7 @@ function MovieInfo({
       </View>
 
       {/* 줄거리 */}
-      {isPost && movie.overview && (
+      {showOverview && movie.overview && (
         <View style={styles.section}>
           <Text style={styles.sectionOverview}>{movie.overview}</Text>
         </View>
@@ -160,6 +165,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     flexShrink: 1,
     color: '#111',
+    maxWidth: '60%',
   },
 
   actionRow: {
@@ -248,5 +254,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     color: '#555',
+  },
+
+  releaseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: '#eaeaea',
+    gap: 6,
+    width: '100%',
+  },
+
+  releaseText: {
+    fontSize: 12,
+    color: '#333',
+    marginLeft: 4,
   },
 });
