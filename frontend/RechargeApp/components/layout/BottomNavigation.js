@@ -62,11 +62,18 @@ export default function BottomNavigation({setIsLoggedIn}) {
         component={MovieStackNavigation}
         options={{
           tabBarLabel: '영화',
-          unmountOnBlur: true,
           tabBarIcon: ({color}) => (
             <MaterialCommunityIcons name="movie-open" size={24} color={color} />
           ),
         }}
+        listeners={({navigation}) => ({
+          tabPress: e => {
+            e.preventDefault();
+            navigation.navigate('Movie', {
+              screen: 'FindMovie',
+            });
+          },
+        })}
       />
 
       <Tab.Screen
@@ -74,11 +81,18 @@ export default function BottomNavigation({setIsLoggedIn}) {
         component={MusicStackNavigation}
         options={{
           tabBarLabel: '음악',
-          unmountOnBlur: true,
           tabBarIcon: ({color}) => (
             <MaterialCommunityIcons name="music" size={24} color={color} />
           ),
         }}
+        listeners={({navigation}) => ({
+          tabPress: e => {
+            e.preventDefault();
+            navigation.navigate('Music', {
+              screen: 'FindMusic',
+            });
+          },
+        })}
       />
 
       <Tab.Screen
@@ -117,7 +131,6 @@ export default function BottomNavigation({setIsLoggedIn}) {
         name="MyPage"
         options={{
           tabBarLabel: '마이페이지',
-          unmountOnBlur: true,
           tabBarIcon: ({color}) => (
             <MaterialCommunityIcons
               name="account-outline"
@@ -125,7 +138,15 @@ export default function BottomNavigation({setIsLoggedIn}) {
               color={color}
             />
           ),
-        }}>
+        }}
+        listeners={({navigation}) => ({
+          tabPress: e => {
+            e.preventDefault();
+            navigation.navigate('MyPage', {
+              screen: 'MyPageScreen',
+            });
+          },
+        })}>
         {() => <MyPageStackNavigation setIsLoggedIn={setIsLoggedIn} />}
       </Tab.Screen>
 

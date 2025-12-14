@@ -3,6 +3,7 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import FindMusicScreen from '../../../screens/media/music/FindMusicScreen';
 import MusicPostScreen from '../../../screens/media/music/MusicPostScreen';
 import MusicDetail from '../../../screens/media/music/MusicDetail';
+import YourPageScreen from '../../../screens/mypage/YourPageScreen';
 import Header from '../Header';
 
 const Stack = createNativeStackNavigator();
@@ -23,6 +24,11 @@ export default function MusicStackNavigation() {
       <Stack.Screen
         name="MusicDetail"
         component={MusicDetail}
+        options={{header: props => <Header {...props} />}}
+      />
+      <Stack.Screen
+        name="YourPageScreen"
+        component={YourPageScreen}
         options={{header: props => <Header {...props} />}}
       />
     </Stack.Navigator>

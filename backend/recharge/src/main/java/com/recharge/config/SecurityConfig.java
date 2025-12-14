@@ -39,10 +39,12 @@ public class SecurityConfig {
                                 "/api/user/find-password",
                                 "/api/user/reset-password",
                                 "/api/user/send-email-auth",
-                                "/api/user/verify-email"
+                                "/api/user/verify-email",
+                                "/api/movie/**",
+                                "/api/moviepost/**",
+                                "/api/music/**",
+                                "/api/userfeed/**"
                         ).permitAll()
-
-                        .requestMatchers("/api/movie/**").authenticated()
 
                         .anyRequest().authenticated()
                 )

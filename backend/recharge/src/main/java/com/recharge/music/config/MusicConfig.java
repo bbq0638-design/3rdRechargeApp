@@ -18,7 +18,7 @@ public class MusicConfig {
     private final String US_TOP100_URL =
             "https://rss.applemarketingtools.com/api/v2/us/music/most-played/50/songs.json";
 
-    private final String ITUNES_SEARCH_URL = "/search";
+
 
     /**  Apple RSS / iTunes 용 전용 WebClient */
     @Bean
@@ -39,11 +39,6 @@ public class MusicConfig {
     public WebClient itunesWebClient() {
         return WebClient.builder()
                 .baseUrl("https://itunes.apple.com")
-                .clientConnector(
-                        new ReactorClientHttpConnector(
-                                HttpClient.create().followRedirect(true)
-                        )
-                )
                 .defaultHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
                 .build();
     }

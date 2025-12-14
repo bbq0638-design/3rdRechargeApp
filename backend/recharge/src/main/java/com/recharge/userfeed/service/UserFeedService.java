@@ -1,4 +1,8 @@
 package com.recharge.userfeed.service;
 
-public class UserFeedService {
+import com.recharge.userfeed.vo.UserFeedVO;
+
+public interface UserFeedService {
+
+    UserFeedVO countUserPosts(String userId);
 }

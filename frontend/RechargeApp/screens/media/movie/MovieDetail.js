@@ -8,13 +8,13 @@ import UserRecommendBox from '../../../components/media/contents/UserRecommendBo
 import {
   fetchMovieDetail,
   fetchMoviePostDetail,
-  updateMoviePost,
   deleteMoviePost,
 } from '../../../utils/Movieapi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoadingAnimation from '../../../components/common/LoadingAnimation';
 import MovieOtherPostsSection from '../../../components/media/lists/MovieOtherPostsSection';
 import MovieSimilarSection from '../../../components/media/lists/MovieSimilarSection';
+import {toggleBookmark, checkBookmark} from '../../../utils/BookmarkApi';
 
 export default function MovieDetail({route}) {
   const {movieId, type} = route.params;
@@ -26,6 +26,10 @@ export default function MovieDetail({route}) {
   const scrollRef = useRef(null);
 
   const isUserPost = type === 'post';
+
+  const bookmarkTargetType = isUserPost ? 'moviepost' : 'movie';
+  const bookmarkTargetId = isUserPost ? movie?.moviePostId : movie?.movieId;
+
   // 이동 시 맨 위로
   useEffect(() => {
     setTimeout(() => {
@@ -36,17 +40,28 @@ export default function MovieDetail({route}) {
   // 인기 및 게시글 구분
   useEffect(() => {
     const load = async () => {
-      // 로그인한 사용자 닉네임 가져오기
       const id = await AsyncStorage.getItem('userId');
       setLoggedInUserId(id);
 
-      // 영화 상세 정보 호출
       const data =
         type === 'popular'
           ? await fetchMovieDetail(movieId)
           : await fetchMoviePostDetail(movieId);
 
       setMovie(data);
+
+      if (id && data) {
+        const targetType = type === 'post' ? 'moviepost' : 'movie';
+        const targetId = type === 'post' ? data.moviePostId : data.movieId;
+
+        const bookmarked = await checkBookmark({
+          userId: id,
+          targetType,
+          targetId,
+        });
+
+        setIsFavorite(bookmarked);
+      }
     };
 
     load();
@@ -98,6 +113,21 @@ export default function MovieDetail({route}) {
     ]);
   };
 
+  const handlePressNickname = async () => {
+    if (!movie) return;
+
+    const myUserId = await AsyncStorage.getItem('userId');
+
+    if (myUserId === movie.userId) {
+      navigation.navigate('MyPage');
+    } else {
+      navigation.navigate('YourPageScreen', {
+        targetUserId: movie.userId,
+        targetUserNickname: movie.userNickname,
+      });
+    }
+  };
+
   const isMine = movie?.userId === loggedInUserId;
   const isAdmin = loggedInUserId === 'admin';
 
@@ -120,7 +150,17 @@ export default function MovieDetail({route}) {
       {/* 즐겨찾기 */}
       <FavoriteButton
         isFavorite={isFavorite}
-        onPress={() => setIsFavorite(p => !p)}
+        onPress={async () => {
+          if (!loggedInUserId || !movie) return;
+
+          const result = await toggleBookmark({
+            userId: loggedInUserId,
+            targetType: type === 'post' ? 'moviepost' : 'movie',
+            targetId: type === 'post' ? movie.moviePostId : movie.movieId,
+          });
+
+          setIsFavorite(Boolean(result));
+        }}
         style={{marginTop: 10}}
       />
 
@@ -130,19 +170,20 @@ export default function MovieDetail({route}) {
           reason={movie.moviePostText}
           nickname={movie.userNickname}
           style={{marginTop: 20}}
-          onPressNickname={() =>
-            navigation.navigate('MyPage', {
-              screen: 'MyPageScreen',
-              params: {isMine: false},
-            })
-          }
+          onPressNickname={handlePressNickname}
         />
       )}
 
       {/* ⭐ 댓글 */}
-      <View style={{marginTop: 10}}>
-        <CommentSection />
-      </View>
+      {movie && (
+        <View style={{marginTop: 10}}>
+          <CommentSection
+            targetType={isUserPost ? 'moviepost' : 'movie'}
+            targetId={isUserPost ? movie.moviePostId : movie.movieId}
+            currentUserId={loggedInUserId}
+          />
+        </View>
+      )}
       {/* 비슷한 장르 및 게시글 작성자의 다른 게시글 이동, 게시글 없으면 비슷한 장르로 자동 변경 */}
       {/* 이용자 게시글이면 → 다른 게시글 먼저 */}
       {isUserPost && !showSimilar && (

@@ -16,6 +16,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import LoadingAnimation from '../../common/LoadingAnimation';
 import MediaDropModal from './MediaDropModal';
 import {searchMovies} from '../../../utils/Movieapi';
+import {searchMusic} from '../../../utils/Musicapi';
 
 function MediaSearchBar({
   type = 'movie',
@@ -50,10 +51,8 @@ function MediaSearchBar({
       }
 
       if (type === 'music') {
-        const res = await axios.get('https://itunes.apple.com/search', {
-          params: {term: text, media: 'music', limit: 5},
-        });
-        setResults(res.data.results);
+        const data = await searchMusic(text);
+        setResults(data.slice(0, 5));
       }
     } catch (e) {
       console.log('MediaSearchBar Error:', e);
@@ -134,14 +133,14 @@ function MediaSearchBar({
         left={dropdownPos.left}
         width={dropdownPos.width}
         options={results.map(r => ({
-          label: type === 'movie' ? r.movieTitle : r.trackName,
-          sub: type === 'movie' ? r.movieDate : r.artistName,
+          label: type === 'movie' ? r.movieTitle : r.musicTitle,
+          sub: type === 'movie' ? r.movieDate : r.musicSinger,
           thumbnail:
             type === 'movie'
               ? r.moviePoster
                 ? r.moviePoster
                 : 'https://via.placeholder.com/92x138'
-              : r.artworkUrl100,
+              : r.musicImagePath,
           onPress: () => handleSelect(r),
         }))} // 여기서 선택 처리
       />

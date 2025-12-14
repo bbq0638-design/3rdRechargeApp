@@ -1,6 +1,6 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {ScrollView, StyleSheet, View, Text} from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 
 import MediaHomeContentCard from '../../../components/media/cards/MediaHeroContentCard';
 import AiRecommendSection from '../../../components/media/cards/AiRecommendCard';
@@ -8,7 +8,13 @@ import Button from '../../../components/common/Button';
 import GenreSelector from '../../../components/media/cards/GenreSelector';
 import MediaListSection from '../../../components/media/lists/MediaListsSection';
 import AiRecommendModal from '../../../components/media/contents/AiRecommendModal';
-import {fetchAllMusic} from '../../../utils/Musicapi';
+import {
+  fetchAllMusic,
+  fetchAllMusicPosts,
+  fetchTopConcerts,
+} from '../../../utils/Musicapi';
+import {fetchUserBookmarks, toggleBookmark} from '../../../utils/BookmarkApi';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const MUSIC_GENRES = [
   {id: 'ALL', name: '전체'},
@@ -24,70 +30,133 @@ function FindMusicScreen() {
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [loading, setLoading] = useState(true);
   const [favoriteMap, setFavoriteMap] = useState({});
+  const [userMusicPosts, setUserMusicPosts] = useState([]);
+  const [concertPosters, setConcertPosters] = useState([]);
 
-  const toggleFavorite = id => {
-    setFavoriteMap(prev => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
+  const toggleFavorite = async musicId => {
+    const userId = await AsyncStorage.getItem('userId');
+    if (!userId) return;
 
-    // 화면에 보이는 리스트에서도 갱신
     setAllMusic(prev =>
       prev.map(item =>
-        item.id === id ? {...item, isFavorite: !item.isFavorite} : item,
+        item.id === musicId ? {...item, isFavorite: !item.isFavorite} : item,
       ),
     );
+
+    try {
+      const result = await toggleBookmark({
+        userId,
+        targetType: 'music',
+        targetId: musicId,
+      });
+
+      // 서버 기준으로 보정
+      setAllMusic(prev =>
+        prev.map(item =>
+          item.id === musicId ? {...item, isFavorite: Boolean(result)} : item,
+        ),
+      );
+    } catch (e) {
+      // 실패 시 롤백
+      setAllMusic(prev =>
+        prev.map(item =>
+          item.id === musicId ? {...item, isFavorite: !item.isFavorite} : item,
+        ),
+      );
+      console.log('music bookmark toggle error:', e);
+    }
   };
 
-  useEffect(() => {
-    loadAllMusic();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadUserPosts();
+      loadAllMusic();
+    }, []),
+  );
 
   const loadAllMusic = async () => {
     try {
       const data = await fetchAllMusic();
+      const userId = await AsyncStorage.getItem('userId');
 
-      const formatted = data.map(m => {
-        const highRes = m.musicImagePath
+      const formatted = data.map(m => ({
+        id: m.musicId,
+        title: m.musicTitle,
+        author: m.musicSinger,
+        image: m.musicImagePath
           ? m.musicImagePath.replace(/\/\d+x\d+bb\.jpg/, '/200x200bb.jpg')
-          : null;
+          : null,
+        categoryId: m.commonCategoryId,
+        isFavorite: false,
+      }));
 
-        return {
-          id: m.musicId,
-          title: m.musicTitle,
-          author: m.musicSinger,
-          image: highRes,
-          categoryId: m.commonCategoryId, // MUSIC1 / MUSIC2
-        };
-      });
+      if (userId && formatted.length > 0) {
+        const bookmarks = await fetchUserBookmarks(userId);
 
-      setAllMusic(formatted);
+        const bookmarkedIds = new Set(
+          bookmarks
+            .filter(b => b.bookmarkTargetType === 'music')
+            .map(b => b.bookmarkTargetId),
+        );
+
+        setAllMusic(
+          formatted.map(m => ({
+            ...m,
+            isFavorite: bookmarkedIds.has(m.id),
+          })),
+        );
+      } else {
+        setAllMusic(formatted);
+      }
+
       setLoading(false);
     } catch (err) {
       console.log('전체 음악 로딩 실패:', err);
       setLoading(false);
     }
   };
-
   const filteredMusic =
     selectedCategory === 'ALL'
       ? allMusic
       : allMusic.filter(m => m.categoryId === selectedCategory);
 
-  const userMusicPosts = [
-    {
-      id: 'pm1',
-      title: '집중할 때 듣기 좋은 음악 추천',
-      author: '알꽁!',
-      image: 'https://dummyimage.com/393x393/cccccc/000000&text=Album',
-    },
-    {
-      id: 'pm2',
-      title: '비 올 때 듣기 좋은 노래',
-      author: '음악덕후',
-      image: 'https://dummyimage.com/393x393/cccccc/000000&text=Album',
-    },
-  ];
+  const loadUserPosts = async () => {
+    try {
+      const data = await fetchAllMusicPosts();
+
+      const posts = data.map(post => {
+        const highRes = post.firstImagePath
+          ? post.firstImagePath.replace(/\/\d+x\d+bb\.jpg/, '/200x200bb.jpg')
+          : null;
+
+        return {
+          id: post.musicPostId,
+          postId: post.musicPostId,
+          title: post.musicPostTitle,
+          author: post.userNickname || post.userId,
+          image: highRes,
+        };
+      });
+
+      setUserMusicPosts(posts);
+    } catch (err) {
+      console.log('이용자 추천 음악 불러오기 실패:', err);
+    }
+  };
+
+  useEffect(() => {
+    const loadConcerts = async () => {
+      try {
+        const data = await fetchTopConcerts();
+        const posters = data.map(item => item.poster);
+        setConcertPosters(posters);
+      } catch (err) {
+        console.log('콘서트 불러오기 실패:', err);
+      }
+    };
+
+    loadConcerts();
+  }, []);
 
   return (
     <>
@@ -95,13 +164,8 @@ function FindMusicScreen() {
         {/* 상단 히어로 섹션 */}
         <MediaHomeContentCard
           title="콘서트 정보"
-          subtitle="아니 카리나를 실제로 본다고요"
-          posters={[
-            'https://dummyimage.com/393x393/cccccc/000000&text=A1',
-            'https://dummyimage.com/393x393/cccccc/000000&text=A2',
-            'https://dummyimage.com/393x393/cccccc/000000&text=A3',
-            'https://dummyimage.com/393x393/cccccc/000000&text=A4',
-          ]}
+          subtitle="출처: 공연예술통합전산망"
+          posters={concertPosters}
         />
         {/* AI 추천 */}
         <AiRecommendSection
@@ -130,7 +194,7 @@ function FindMusicScreen() {
           items={userMusicPosts}
           variant="music"
           onPressItem={music =>
-            navigation.navigate('MusicDetail', {musicId: music.id})
+            navigation.navigate('MusicDetail', {postId: music.postId})
           }
         />
 

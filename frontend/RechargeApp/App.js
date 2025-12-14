@@ -6,6 +6,7 @@ import {Linking} from 'react-native';
 
 import AuthStack from './components/layout/auth/AuthStack';
 import BottomNavigation from './components/layout/BottomNavigation';
+import YourPageScreen from './screens/mypage/YourPageScreen';
 import {navigationRef} from './components/layout/navigationRef';
 
 const Stack = createNativeStackNavigator();

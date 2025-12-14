@@ -11,6 +11,7 @@ const MediaCards = ({
   onPress,
   variant,
   isFavorite = false,
+  showFavorite = true,
   onFavoriteToggle,
   style,
 }) => {
@@ -36,11 +37,13 @@ const MediaCards = ({
 
           {/* 오른쪽: FavoriteButton 옮김 */}
           <View style={styles.rightColumn}>
-            <FavoriteButton
-              type="overlaySmall"
-              isFavorite={isFavorite}
-              onPress={onFavoriteToggle}
-            />
+            {showFavorite && (
+              <FavoriteButton
+                type="overlaySmall"
+                isFavorite={isFavorite}
+                onPress={onFavoriteToggle}
+              />
+            )}
           </View>
         </View>
       </View>

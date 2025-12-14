@@ -2,6 +2,8 @@ package com.recharge.music.vo;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class MusicPostVO {
     private Long musicPostId;
@@ -17,5 +19,7 @@ public class MusicPostVO {
     private String updatedDate;
 
     private String firstImagePath;
+
+    private List<MusicListVO> playlist;
 
 }

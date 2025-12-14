@@ -1,17 +1,55 @@
-import React, {useRef, useCallback, useState} from 'react';
+import React, {useRef, useCallback, useState, useEffect} from 'react';
 import {View, ScrollView, Dimensions, StyleSheet, Text} from 'react-native';
 import MediaTab from '../buttontabs/MediaTab';
 import MediaCards from '../../media/cards/MediaCards';
+import {fetchUserMoviePosts} from '../../../utils/Movieapi';
+import {fetchUserMusicPosts} from '../../../utils/Musicapi';
 
 const {width} = Dimensions.get('window');
 
-export default function MyPostMediaList({
-  moviePosts = [],
-  musicPosts = [],
-  onPressItem,
-}) {
+export default function MyPostMediaList({userId, onPressItem}) {
   const [activeTab, setActiveTab] = useState('movie');
   const scrollRef = useRef(null);
+
+  const [moviePosts, setMoviePosts] = useState([]);
+  const [musicPosts, setMusicPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const load = async () => {
+      try {
+        setLoading(true);
+
+        const movieData = await fetchUserMoviePosts(userId);
+        const musicData = await fetchUserMusicPosts(userId);
+        setMoviePosts(
+          movieData.map(item => ({
+            id: item.moviePostId,
+            title: item.moviePostTitle,
+            author: item.userNickname,
+            image: item.moviePoster,
+          })),
+        );
+
+        setMusicPosts(
+          musicData.map(item => ({
+            id: item.musicPostId,
+            title: item.musicPostTitle,
+            author: item.userNickname,
+            image: item.firstImagePath,
+          })),
+        );
+      } catch (e) {
+        console.log('마이페이지 게시글 로드 실패:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [userId]);
 
   /** 🔹 탭 클릭 → 슬라이드 이동 */
   const handleTabPress = useCallback(

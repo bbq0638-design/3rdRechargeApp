@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,10 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
+
+import {useNavigation} from '@react-navigation/native';
 
 import MediaSearchBar from '../../../components/media/contents/MediaSearchBar';
 import MusicPlaylistItem from '../../../components/media/contents/MusicPlaylistItem';
@@ -15,12 +18,24 @@ import LoadingAnimation from '../../../components/common/LoadingAnimation';
 import Button from '../../../components/common/Button';
 import TextArea from '../../../components/common/TextArea';
 import CustomTextInput from '../../../components/common/TextInput';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  createMusicPost,
+  updateMusicPost,
+  fetchMusicPostDetail,
+} from '../../../utils/Musicapi';
 
-function MusicPostScreen() {
+function MusicPostScreen({route}) {
+  const isEdit = !!route?.params?.postId;
+  const postId = route?.params?.postId;
+
+  const navigation = useNavigation();
+
   const [playlist, setPlaylist] = useState([]);
   const [loading, setLoading] = useState(false);
   const [reason, setReason] = useState('');
   const [title, setTitle] = useState('');
+  const [userId, setUserId] = useState(null);
   const fadeAnim = useState(new Animated.Value(0))[0];
 
   const isSubmitDisabled =
@@ -36,11 +51,42 @@ function MusicPostScreen() {
     }
   }, [playlist]);
 
-  /** 🎵 검색에서 넘어온 track → 표준 구조로 통일 */
-  const normalizeTrack = track => ({
-    title: track.trackName || track.title,
-    artist: track.artistName || track.artist,
-    artwork: track.artworkUrl100 || track.artworkUrl60 || track.artwork || null,
+  useEffect(() => {
+    const loadUserId = async () => {
+      const id = await AsyncStorage.getItem('userId');
+      setUserId(id);
+    };
+    loadUserId();
+  }, []);
+
+  useEffect(() => {
+    if (isEdit) {
+      loadPostData();
+    }
+  }, [isEdit]);
+
+  const loadPostData = async () => {
+    setLoading(true);
+    try {
+      const detail = await fetchMusicPostDetail(postId);
+
+      setTitle(detail.musicPostTitle);
+      setReason(detail.musicPostText);
+
+      const normalized =
+        detail.playlist?.map(item => normalizeTrack(item)) ?? [];
+      setPlaylist(normalized);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const normalizeTrack = item => ({
+    musicId: item.musicId,
+    musicTitle: item.musicTitle,
+    musicSinger: item.musicSinger,
+    musicImagePath: item.musicImagePath,
+    musicPreviewUrl: item.musicPreviewUrl,
   });
 
   /** 🎵 곡 추가 */
@@ -52,6 +98,53 @@ function MusicPostScreen() {
   /** 🎵 삭제 */
   const removeTrack = index => {
     setPlaylist(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async () => {
+    if (!userId) {
+      console.log('유저 정보 없음');
+      return;
+    }
+
+    try {
+      if (isEdit) {
+        // ⭐ 수정 모드
+        const payload = {
+          userId: userId,
+          musicPostId: postId,
+          musicPostTitle: title,
+          musicPostText: reason,
+          playlist: playlist,
+          updatedId: userId,
+        };
+
+        await updateMusicPost(postId, payload);
+
+        console.log('수정 완료!');
+
+        // ⭐ 수정 후 상세로 이동
+        navigation.push('MusicDetail', {postId});
+      } else {
+        // ⭐ 신규 작성 모드
+        const payload = {
+          userId: userId,
+          createId: userId,
+          musicPostTitle: title,
+          musicPostText: reason,
+          playlist: playlist,
+        };
+
+        // ⭐ 서버에서 생성된 postId 받기
+        const newId = await createMusicPost(payload);
+
+        console.log('등록 완료! Post ID:', newId);
+
+        // ⭐ 새로 생성된 postId로 상세 페이지 이동
+        navigation.push('MusicDetail', {postId: newId});
+      }
+    } catch (err) {
+      console.log('저장 실패', err);
+    }
   };
 
   return (
@@ -104,7 +197,6 @@ function MusicPostScreen() {
               height={44}
               onPress={() => {
                 setPlaylist([]);
-                setReason('');
               }}
               style={{marginBottom: 16}}
               textStyle={{fontSize: 15}}
@@ -138,12 +230,10 @@ function MusicPostScreen() {
         {/* 등록 버튼 */}
         <Button
           type="submit"
-          text="추천글 등록하기"
+          text={isEdit ? '수정하기' : '추천글 등록하기'}
           height={48}
           disabled={isSubmitDisabled}
-          onPress={() => {
-            console.log('등록!', {playlist, reason});
-          }}
+          onPress={handleSubmit}
           style={{marginTop: 20, marginBottom: 40}}
         />
       </ScrollView>

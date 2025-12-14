@@ -2,8 +2,12 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="con.recharge.music.dao.MusicPostDAO">
+<mapper namespace="com.recharge.music.dao.MusicPostDAO">
     <insert id="insertMusicPost" parameterType="MusicPostVO">
+        <selectKey keyProperty="musicPostId" resultType="long" order="BEFORE">
+            SELECT SEQ_MUSIC_POST.NEXTVAL FROM dual
+        </selectKey>
+
         INSERT INTO TB_MUSIC_POST (
         MUSIC_POST_ID,
         USER_ID,
@@ -14,18 +18,22 @@
         UPDATED_DATE,
         UPDATED_ID
         ) VALUES (
-        SEQ_MUSIC_POST.NEXTVAL,
+        #{musicPostId},
         #{userId},
         #{musicPostTitle},
         #{musicPostText},
         SYSDATE,
-        #{createdId},
+        #{createId},
         SYSDATE,
         #{updatedId}
         )
     </insert>
 
     <insert id="insertMusicList" parameterType="MusicListVO">
+        <selectKey keyProperty="musicListId" resultType="long" order="BEFORE">
+            SELECT SEQ_MUSIC_LIST.NEXTVAL FROM dual
+        </selectKey>
+
         INSERT INTO TB_MUSIC_LIST (
         MUSIC_LIST_ID,
         MUSIC_POST_ID,
@@ -39,7 +47,7 @@
         UPDATED_DATE,
         UPDATED_ID
         ) VALUES (
-        SEQ_MUSIC_LIST.NEXTVAL,
+        #{musicListId},
         #{musicPostId},
         #{musicId},
         #{musicTitle},
@@ -57,6 +65,7 @@
         SELECT
         p.MUSIC_POST_ID    AS musicPostId,
         p.USER_ID          AS userId,
+        u.USER_NICKNAME    AS userNickname,
         p.MUSIC_POST_TITLE AS musicPostTitle,
         p.MUSIC_POST_TEXT  AS musicPostText,
         p.CREATE_ID        AS createId,
@@ -70,6 +79,7 @@
         AND ROWNUM = 1) AS firstImagePath
 
         FROM TB_MUSIC_POST p
+        JOIN TB_USER u ON p.USER_ID = u.USER_ID
         ORDER BY p.MUSIC_POST_ID DESC
     </select>
 
@@ -108,4 +118,72 @@
         WHERE MUSIC_POST_ID = #{musicPostId}
         ORDER BY MUSIC_LIST_ID
     </select>
+
+    <select id="selectPostsByUser" resultType="MusicPostVO">
+        SELECT
+        p.MUSIC_POST_ID    AS musicPostId,
+        p.USER_ID          AS userId,
+        u.USER_NICKNAME    AS userNickname,
+        p.MUSIC_POST_TITLE AS musicPostTitle,
+        p.MUSIC_POST_TEXT  AS musicPostText,
+        (SELECT l.MUSIC_IMAGE_PATH
+        FROM TB_MUSIC_LIST l
+        WHERE l.MUSIC_POST_ID = p.MUSIC_POST_ID
+        AND ROWNUM = 1) AS firstImagePath
+        FROM TB_MUSIC_POST p
+        JOIN TB_USER u ON p.USER_ID = u.USER_ID
+        WHERE p.USER_ID = #{userId}
+        ORDER BY p.MUSIC_POST_ID DESC
+    </select>
+
+    <update id="updateMusicPost" parameterType="MusicPostVO">
+        UPDATE TB_MUSIC_POST
+        SET
+        MUSIC_POST_TITLE = #{musicPostTitle},
+        MUSIC_POST_TEXT  = #{musicPostText},
+        UPDATED_ID       = #{updatedId},
+        UPDATED_DATE     = SYSDATE
+        WHERE MUSIC_POST_ID = #{musicPostId}
+    </update>
+
+    <update id="updateMusicList" parameterType="MusicListVO">
+        UPDATE TB_MUSIC_LIST
+        SET
+        MUSIC_TITLE      = #{musicTitle},
+        MUSIC_SINGER     = #{musicSinger},
+        MUSIC_IMAGE_PATH = #{musicImagePath},
+        MUSIC_PREVIEW_URL = #{musicPreviewUrl},
+        UPDATED_ID       = #{updatedId},
+        UPDATED_DATE     = SYSDATE
+        WHERE MUSIC_POST_ID = #{musicPostId}
+        AND MUSIC_ID      = #{musicId}
+    </update>
+
+    <select id="selectMusicIdsByPost" resultType="long">
+        SELECT MUSIC_ID
+        FROM TB_MUSIC_LIST
+        WHERE MUSIC_POST_ID = #{postId}
+    </select>
+
+    <delete id="deleteMusicPost">
+        DELETE FROM TB_MUSIC_POST
+        WHERE MUSIC_POST_ID = #{postId}
+    </delete>
+
+    <delete id="deleteMusicListByPost">
+        DELETE FROM TB_MUSIC_LIST
+        WHERE MUSIC_POST_ID = #{postId}
+    </delete>
+
+    <delete id="deleteMusicListByMusicIds">
+        DELETE FROM TB_MUSIC_LIST
+        WHERE MUSIC_POST_ID = #{postId}
+        AND MUSIC_ID IN
+        <foreach collection="musicIds" item="musicId" open="(" separator="," close=")">
+            #{musicId}
+        </foreach>
+    </delete>
+
+
+
 </mapper>

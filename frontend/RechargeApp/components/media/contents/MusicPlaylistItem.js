@@ -26,11 +26,11 @@ function MusicPlaylistItem({
         />
       )}
       {/* 앨범아트 */}
-      <Image source={{uri: item.artwork}} style={styles.thumb} />
+      <Image source={{uri: item.musicImagePath}} style={styles.thumb} />
       {/* 제목 + 가수 */}
       <View style={styles.info}>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.artist}>{item.artist}</Text>
+        <Text style={styles.title}>{item.musicTitle}</Text>
+        <Text style={styles.artist}>{item.musicSinger}</Text>
       </View>
       {/* 삭제 버튼 */}
       {showDelete && (

@@ -1,137 +1,264 @@
-import React, {useState} from 'react';
-import {View, StyleSheet, ScrollView, Text} from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import React, {useState, useEffect, useCallback} from 'react';
+import {View, StyleSheet, ScrollView, Text, Alert} from 'react-native';
+import {
+  useNavigation,
+  useRoute,
+  useFocusEffect,
+} from '@react-navigation/native';
 
 import CommentSection from '../../../components/common/CommentSection';
 import UserRecommendBox from '../../../components/media/contents/UserRecommendBox';
-import MediaListSection from '../../../components/media/lists/MediaListsSection';
+import MusicOtherPostsSection from '../../../components/media/lists/MusicOtherPostsSection';
 import MusicPlaylistItem from '../../../components/media/contents/MusicPlaylistItem';
 import UserPostActionBar from '../../../components/common/UserPostActionBar';
+import MusicPreview from '../../../components/media/contents/MusicPreview';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {toggleBookmark, fetchUserBookmarks} from '../../../utils/BookmarkApi';
+
+import {fetchMusicPostDetail, deleteMusicPost} from '../../../utils/Musicapi';
 
 function MusicDetail() {
   const navigation = useNavigation();
+  const route = useRoute();
+  const {postId} = route.params;
 
-  const toggleFavorite = index => {
+  const [loggedInUserId, setLoggedInUserId] = useState(null);
+  const [post, setPost] = useState(null);
+  const [playlist, setPlaylist] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [previewTrack, setPreviewTrack] = useState(null);
+  const [currentIndex, setCurrentIndex] = useState(null);
+
+  const MINI_PLAYER_HEIGHT = 85 + 20;
+
+  const isMine = post?.userId === loggedInUserId;
+  const isAdmin = loggedInUserId === 'admin';
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const id = await AsyncStorage.getItem('userId');
+      setLoggedInUserId(id);
+    };
+    loadUser();
+  }, []);
+
+  /** 🎵 즐겨찾기 토글 */
+  const toggleFavorite = async index => {
+    const userId = await AsyncStorage.getItem('userId');
+    if (!userId) return;
+
+    const track = playlist[index];
+    if (!track) return;
+
+    // ⭐ UI 먼저 반전
     setPlaylist(prev =>
       prev.map((item, i) =>
         i === index ? {...item, isFavorite: !item.isFavorite} : item,
       ),
     );
+
+    try {
+      const result = await toggleBookmark({
+        userId,
+        targetType: 'musiclist',
+        targetId: track.musicListId,
+      });
+
+      // 서버 기준 보정
+      setPlaylist(prev =>
+        prev.map((item, i) =>
+          i === index ? {...item, isFavorite: Boolean(result)} : item,
+        ),
+      );
+    } catch (e) {
+      // 실패 시 롤백
+      setPlaylist(prev =>
+        prev.map((item, i) =>
+          i === index ? {...item, isFavorite: !item.isFavorite} : item,
+        ),
+      );
+      console.log('music bookmark toggle error:', e);
+    }
   };
 
-  const [playlist, setPlaylist] = useState([
-    {
-      id: 'm1',
-      title: 'Blinding Lights',
-      artist: 'The Weeknd',
-      artwork:
-        'https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/bb/a4/51/bba45133-e3f7-4edf-8d55-bacf31b1bfa8/source/100x100bb.jpg',
-      isFavorite: true,
-    },
-    {
-      id: 'm2',
-      title: 'Save Your Tears',
-      artist: 'The Weeknd',
-      artwork:
-        'https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/aa/bc/44/aabc4422-aaa1-42ab-9cc5-abc123abc123/source/100x100bb.jpg',
-      isFavorite: false,
-    },
-    {
-      id: 'm3',
-      title: 'In Your Eyes',
-      artist: 'The Weeknd',
-      artwork:
-        'https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/cc/af/44/ccaf44fd-1231-456a-951c-aaee11223344/source/100x100bb.jpg',
-      isFavorite: false,
-    },
-  ]);
+  /** 🎵 게시글 + 플레이리스트 로딩 */
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [postId]),
+  );
 
-  const reason = '리듬과 멜로디가 중독적이고 분위기가 정말 최고예요 😍✨';
-  const nickname = 'charger_user';
+  const loadData = async () => {
+    try {
+      const detail = await fetchMusicPostDetail(postId);
+      const userId = await AsyncStorage.getItem('userId');
 
-  const similarMusics = [
-    {
-      id: '101',
-      title: 'Can’t Feel My Face',
-      artist: 'The Weeknd',
-      artwork:
-        'https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/11/bc/77/11bc77b5-aaa1-42ab-9cc5-abc123abc123/source/100x100bb.jpg',
-    },
-    {
-      id: '102',
-      title: 'Starboy',
-      artist: 'The Weeknd',
-      artwork:
-        'https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/22/af/44/22af44fd-7a7c-99aa-b11f-dc123123aaa/source/100x100bb.jpg',
-    },
-  ];
+      const formattedPlaylist = detail.playlist.map(item => ({
+        musicListId: item.musicListId,
+        musicId: item.musicId,
+        musicTitle: item.musicTitle,
+        musicSinger: item.musicSinger,
+        musicImagePath: item.musicImagePath,
+        musicPreviewUrl: item.musicPreviewUrl,
+        isFavorite: false,
+      }));
+
+      if (userId && formattedPlaylist.length > 0) {
+        const bookmarks = await fetchUserBookmarks(userId);
+
+        const bookmarkedIds = new Set(
+          bookmarks
+            .filter(b => b.bookmarkTargetType === 'musiclist')
+            .map(b => b.bookmarkTargetId),
+        );
+
+        setPlaylist(
+          formattedPlaylist.map(track => ({
+            ...track,
+            isFavorite: bookmarkedIds.has(track.musicListId),
+          })),
+        );
+      } else {
+        setPlaylist(formattedPlaylist);
+      }
+
+      setPost(detail);
+    } catch (err) {
+      console.log('게시글 상세 조회 실패:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /** 로딩 화면 */
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>로딩중...</Text>
+      </View>
+    );
+  }
+
+  const handleDelete = () => {
+    Alert.alert('삭제 확인', '정말 이 게시글을 삭제하시겠어요?', [
+      {text: '취소', style: 'cancel'},
+      {
+        text: '삭제',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteMusicPost(postId);
+            Alert.alert('삭제 완료', '게시글이 성공적으로 삭제되었습니다.');
+            navigation.goBack();
+          } catch (err) {
+            Alert.alert('삭제 실패', '잠시 후 다시 시도해주세요.');
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleEdit = () => {
+    navigation.navigate('MusicPostScreen', {postId});
+  };
+  // 미리듣기 재생 및 다음곡 재생
+  const playNext = () => {
+    if (currentIndex === null) return;
+
+    const nextIndex = currentIndex + 1;
+
+    if (nextIndex >= playlist.length) {
+      Alert.alert('알림', '마지막 곡입니다.');
+      return;
+    }
+
+    setCurrentIndex(nextIndex);
+    setPreviewTrack(playlist[nextIndex]);
+  };
+
+  const handlePressNickname = async () => {
+    if (!post) return;
+
+    const myUserId = await AsyncStorage.getItem('userId');
+
+    if (myUserId === post.userId) {
+      navigation.navigate('MyPage');
+    } else {
+      navigation.navigate('YourPageScreen', {
+        targetUserId: post.userId,
+        targetUserNickname: post.userNickname,
+      });
+    }
+  };
+
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{paddingBottom: 60}}
-      showsVerticalScrollIndicator={false}>
-      <View style={styles.cardWrapper}>
-        {/* 제목 + 액션버튼 */}
-        <View style={styles.titleRow}>
-          <Text style={styles.titleText}>
-            집중 잘 되는 음악 플레이리스트 🎧✨
-          </Text>
+    <>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{
+          paddingBottom: previewTrack ? MINI_PLAYER_HEIGHT : 20,
+        }}
+        showsVerticalScrollIndicator={false}>
+        <View style={styles.cardWrapper}>
+          {/* 제목 + 액션버튼 */}
+          <View style={styles.titleRow}>
+            <Text style={styles.titleText}>{post.musicPostTitle}</Text>
 
-          <UserPostActionBar
-            isMine={true}
-            isAdmin={false}
-            isPost={true}
-            onEdit={() => console.log('수정 클릭')}
-            onDelete={() => console.log('삭제 클릭')}
-            onReport={() => console.log('신고 클릭')}
-          />
-        </View>
-
-        {/* 플레이리스트 */}
-        <View style={styles.playlistBox}>
-          {playlist.map((track, index) => (
-            <MusicPlaylistItem
-              key={track.id}
-              item={track}
-              showFavorite={true}
-              isFavorite={track.isFavorite}
-              onFavoriteToggle={() => toggleFavorite(index)}
-              showPreview={true}
-              onPreview={() => console.log('미리듣기 실행', track.title)}
-              showDelete={false}
+            <UserPostActionBar
+              isMine={isMine}
+              isAdmin={isAdmin}
+              isPost={true}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onReport={() => console.log('신고 클릭')}
             />
-          ))}
+          </View>
+
+          {/* 플레이리스트 */}
+          <View style={styles.playlistBox}>
+            {playlist.map((track, index) => (
+              <MusicPlaylistItem
+                key={track.musicId}
+                item={track}
+                showFavorite={true}
+                isFavorite={track.isFavorite}
+                onFavoriteToggle={() => toggleFavorite(index)}
+                showPreview={true}
+                onPreview={() => {
+                  setCurrentIndex(index);
+                  setPreviewTrack(track);
+                }}
+              />
+            ))}
+          </View>
         </View>
-      </View>
 
-      <UserRecommendBox
-        reason={reason}
-        nickname={nickname}
-        style={{marginTop: 30}}
-        onPressNickname={() =>
-          navigation.navigate('MyPage', {
-            screen: 'MyPageScreen',
-            params: {isMine: false},
-          })
-        }
-      />
+        {/* 추천 이유 + 작성자 */}
+        <UserRecommendBox
+          reason={post.musicPostText}
+          nickname={post.userNickname}
+          style={{marginTop: 30}}
+          onPressNickname={handlePressNickname}
+        />
 
-      {/* 댓글 */}
-      <View>
-        <CommentSection />
-      </View>
+        {/* 댓글 */}
+        <CommentSection
+          targetType="musicpost"
+          targetId={post.musicPostId}
+          currentUserId={loggedInUserId}
+        />
 
-      {/* 음악 관련 추천 리스트 */}
-      <MediaListSection
-        title="이용자가 추천한 다른 음악"
-        items={similarMusics}
-        variant="music"
-        onPressItem={music =>
-          navigation.navigate('MusicDetail', {musicId: music.id})
-        }
-        style={{marginTop: 20}}
-      />
-    </ScrollView>
+        {/* 관련 음악 */}
+        <MusicOtherPostsSection userId={post.userId} />
+      </ScrollView>
+      {previewTrack && (
+        <MusicPreview
+          track={previewTrack}
+          onClose={() => setPreviewTrack(null)}
+          onNext={playNext}
+        />
+      )}
+    </>
   );
 }
 
@@ -140,6 +267,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FAFAFA',
     padding: 16,
+  },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   titleRow: {
@@ -155,14 +288,6 @@ const styles = StyleSheet.create({
     color: '#111',
     flex: 1,
     paddingRight: 8,
-  },
-
-  playlistWrapper: {
-    borderRadius: 12,
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    overflow: 'hidden',
   },
 
   cardWrapper: {

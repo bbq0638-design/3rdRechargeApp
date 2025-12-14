@@ -1,86 +1,121 @@
-import React, {useRef, useCallback, useState} from 'react';
+import React, {useRef, useCallback, useState, useEffect} from 'react';
 import {View, ScrollView, StyleSheet, Text, Dimensions} from 'react-native';
 import MediaCards from '../../media/cards/MediaCards';
 import MediaTab from '../buttontabs/MediaTab';
+import {fetchUserBookmarks, toggleBookmark} from '../../../utils/BookmarkApi';
+import {fetchMoviePostList} from '../../../utils/Movieapi';
 
 const {width} = Dimensions.get('window');
 
 export default function FavoriteMediaList({
-  favoriteMovies,
-  favoriteMusic,
+  userId,
   onPressItem,
+  hideFavorite = false,
 }) {
   const [activeTab, setActiveTab] = useState('movie');
   const scrollRef = useRef(null);
 
-  // ⭐ 임시 더미 데이터 (영화)
-  const dummyMovies = [
-    {
-      id: 'M1',
-      title: '인터스텔라',
-      author: null,
-      poster_path: '/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
-    },
-    {
-      id: 'M2',
-      title: '내 추천글',
-      author: '알꽁님',
-      image: 'https://placehold.co/300x450?text=MyPost',
-    },
-    {
-      id: 'M3',
-      title: '이용자 추천글',
-      author: 'movie_fan',
-      image: 'https://placehold.co/300x450?text=User',
-    },
-  ];
+  const [movies, setMovies] = useState([]);
+  const [music, setMusic] = useState([]);
 
-  // ⭐ 임시 더미 데이터 (음악)
-  const dummyMusic = [
-    {
-      id: 'S1',
-      title: '좋은 날',
-      image: 'https://placehold.co/200x200?text=IU',
-      author: '아이유',
-    },
-    {
-      id: 'S2',
-      title: 'Weekend',
-      image: 'https://placehold.co/200x200?text=Taeyeon',
-      author: '태연',
-    },
-    {
-      id: 'S3',
-      title: 'Best Hits',
-      image: 'https://placehold.co/200x200?text=Hits',
-      author: 'playlist',
-    },
-  ];
+  const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 
-  const movies = favoriteMovies ?? dummyMovies;
-  const music = favoriteMusic ?? dummyMusic;
+  const normalizeBookmark = bm => {
+    switch (bm.bookmarkTargetType) {
+      case 'movie':
+        return {
+          id: bm.bookmarkTargetId,
+          title: bm.title,
+          image: bm.image,
+          type: 'movie',
+        };
 
-  // 이미지 처리
-  const getMovieImage = item =>
-    item.poster_path
-      ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-      : item.image ?? '';
+      case 'music':
+        return {
+          id: bm.bookmarkTargetId,
+          title: bm.musicTitle,
+          author: bm.musicSinger,
+          image: bm.musicImagePath,
+          type: 'music',
+        };
 
-  const getMusicImage = item => item.image || '';
+      case 'musiclist':
+        return {
+          id: bm.musicListId,
+          title: bm.listMusicTitle,
+          author: bm.listMusicSinger,
+          image: bm.listMusicImage,
+          type: 'musiclist',
+        };
 
-  // 탭을 눌렀을 때 → 슬라이드 이동
-  const handleTabPress = useCallback(
-    tab => {
-      setActiveTab(tab);
-      scrollRef.current?.scrollTo({
-        x: tab === 'movie' ? 0 : width,
-        animated: true,
-      });
-    },
-    [scrollRef],
-  );
+      default:
+        return null;
+    }
+  };
 
-  // 스크롤 완료 → 탭 상태 변경
+  useEffect(() => {
+    if (!userId) return;
+
+    const loadBookmarks = async () => {
+      try {
+        const bookmarks = await fetchUserBookmarks(userId);
+
+        // 🔹 movie / music
+        const movieItems = [];
+        const musicItems = [];
+
+        bookmarks.forEach(bm => {
+          const normalized = normalizeBookmark(bm);
+          if (!normalized) return;
+
+          if (normalized.type === 'movie') movieItems.push(normalized);
+          if (normalized.type === 'music' || normalized.type === 'musiclist') {
+            musicItems.push(normalized);
+          }
+        });
+
+        // 🔹 moviepost
+        const moviePostIds = new Set(
+          bookmarks
+            .filter(b => b.bookmarkTargetType === 'moviepost')
+            .map(b => b.bookmarkTargetId),
+        );
+
+        if (moviePostIds.size > 0) {
+          const posts = await fetchMoviePostList();
+
+          const moviePostItems = posts
+            .filter(p => moviePostIds.has(p.moviePostId))
+            .map(p => ({
+              id: p.moviePostId,
+              title: p.moviePostTitle,
+              image: p.moviePoster, // ⭐ 이미 TMDB 적용됨
+              author: p.userNickname, // ⭐ 닉네임 포함
+              type: 'moviepost',
+            }));
+
+          setMovies([...movieItems, ...moviePostItems]);
+        } else {
+          setMovies(movieItems);
+        }
+
+        setMusic(musicItems);
+      } catch (e) {
+        console.log('즐겨찾기 불러오기 실패:', e);
+      }
+    };
+
+    loadBookmarks();
+  }, [userId]);
+
+  const handleTabPress = useCallback(tab => {
+    setActiveTab(tab);
+    scrollRef.current?.scrollTo({
+      x: tab === 'movie' ? 0 : width,
+      animated: true,
+    });
+  }, []);
+
   const handleScrollEnd = useCallback(e => {
     const offsetX = e.nativeEvent.contentOffset.x;
     const pageIndex = Math.round(offsetX / width);
@@ -89,10 +124,8 @@ export default function FavoriteMediaList({
 
   return (
     <View style={styles.container}>
-      {/* 🟦 상단 탭 */}
       <MediaTab activeTab={activeTab} onChangeTab={handleTabPress} />
 
-      {/* 🟦 슬라이드 페이저 */}
       <ScrollView
         horizontal
         pagingEnabled
@@ -100,19 +133,18 @@ export default function FavoriteMediaList({
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={handleScrollEnd}
         style={styles.pager}>
-        {/* 🎬 영화 카드 */}
+        {/* 🎬 영화 */}
         <View style={[styles.page, {width}]}>
           <ScrollView contentContainerStyle={styles.grid}>
             {movies.length > 0 ? (
               movies.map(item => (
                 <MediaCards
-                  key={item.id}
+                  key={`${item.type}-${item.id}`}
                   title={item.title}
                   author={item.author}
-                  image={getMovieImage(item)}
-                  style={styles.card}
+                  image={item.image}
                   variant="movie"
-                  onPress={() => onPressItem?.(item, 'movie')}
+                  onPress={() => onPressItem?.(item, item.type)}
                 />
               ))
             ) : (
@@ -121,19 +153,37 @@ export default function FavoriteMediaList({
           </ScrollView>
         </View>
 
-        {/* 🎵 음악 카드 (musicChart) */}
+        {/* 🎵 음악 */}
         <View style={[styles.page, {width}]}>
           <ScrollView contentContainerStyle={styles.grid}>
             {music.length > 0 ? (
               music.map(item => (
                 <MediaCards
-                  key={item.id}
+                  key={`${item.type}-${item.id}`}
                   title={item.title}
-                  author={item.author} // ⭐ 여기서 author 정상 전달!
-                  image={getMusicImage(item)}
-                  style={styles.card}
+                  author={item.author}
+                  image={item.image}
                   variant="musicChart"
-                  onPress={() => onPressItem?.(item, 'music')}
+                  showFavorite={!hideFavorite}
+                  isFavorite={true} // ⭐ 항상 true
+                  onFavoriteToggle={async () => {
+                    try {
+                      await toggleBookmark({
+                        userId,
+                        targetType: item.type, // music | musiclist
+                        targetId: item.id,
+                      });
+
+                      // ⭐ UI에서 즉시 제거
+                      setMusic(prev =>
+                        prev.filter(
+                          m => !(m.type === item.type && m.id === item.id),
+                        ),
+                      );
+                    } catch (e) {
+                      console.log('즐겨찾기 해제 실패:', e);
+                    }
+                  }}
                 />
               ))
             ) : (
