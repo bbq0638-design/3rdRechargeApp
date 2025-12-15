@@ -209,9 +209,9 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 14,
+    paddingHorizontal: 5,
     paddingBottom: 50,
-    marginLeft: 30,
+    marginLeft: 15,
   },
   card: {
     marginBottom: 22,

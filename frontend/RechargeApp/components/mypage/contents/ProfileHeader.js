@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React from 'react';
 import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 import IconButton from '../../common/iconButton';
 import Button from '../../common/Button';
@@ -9,20 +9,22 @@ function ProfileHeader({
   followerCount = '0',
   followingCount = '0',
   isMine = true,
-  onPressFollower,
-  onPressFollowing,
+
+  // actions
   onLogout,
   onReport,
   onToggleFollow,
-  isFollowing,
+
+  // follow state
+  isFollowing = false,
+
+  // navigation
+  onPressFollower,
+  onPressFollowing,
 }) {
-  const handleToggleFollow = () => {
-    setIsFollowing(prev => !prev);
-    // + 백엔드 API 호출도 여기에서 하면 됨!
-  };
   return (
     <View style={styles.container}>
-      {/* 닉네임 및 로그아웃 */}
+      {/* 상단 닉네임 + 버튼 */}
       <View style={styles.topRow}>
         <Text style={styles.nickname}>{nickname}</Text>
         {isMine ? (
@@ -41,26 +43,32 @@ function ProfileHeader({
           />
         )}
       </View>
-      {/* 게시글/팔로우/팔로잉 */}
 
+      {/* 게시글 / 팔로워 / 팔로잉 */}
       <View style={styles.statsRow}>
         <View style={styles.statBox}>
           <Text style={styles.statLabel}>게시글</Text>
           <Text style={styles.statValue}>{postCount}</Text>
         </View>
 
-        <TouchableOpacity style={styles.statBox} onPress={onPressFollower}>
-          <Text style={styles.statLabel}>팔로우</Text>
+        <TouchableOpacity
+          style={styles.statBox}
+          onPress={onPressFollower}
+          disabled={!onPressFollower}>
+          <Text style={styles.statLabel}>팔로워</Text>
           <Text style={styles.statValue}>{followerCount}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.statBox} onPress={onPressFollowing}>
+        <TouchableOpacity
+          style={styles.statBox}
+          onPress={onPressFollowing}
+          disabled={!onPressFollowing}>
           <Text style={styles.statLabel}>팔로잉</Text>
           <Text style={styles.statValue}>{followingCount}</Text>
         </TouchableOpacity>
       </View>
 
-      {/* 상대방 피드일 경우 팔로우 버튼 표시 */}
+      {/* 상대방 페이지일 때만 팔로우 버튼 */}
       {!isMine && (
         <Button
           type={isFollowing ? 'cancel' : 'submit'}
@@ -110,7 +118,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#111827',
   },
-
   followBtn: {
     marginTop: 22,
   },

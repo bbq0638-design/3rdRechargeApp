@@ -1,38 +1,46 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {ScrollView, Alert} from 'react-native';
+import {useFocusEffect} from '@react-navigation/native';
+
 import ProfileHeader from '../../components/mypage/contents/ProfileHeader';
 import MyPageTab from '../../components/mypage/buttontabs/MyPageTab';
 import MyPostMediaList from '../../components/mypage/contents/MyPostMediaList';
 import FavoriteMediaList from '../../components/mypage/contents/FavoriteMediaList';
+
 import {logout} from '../../utils/api';
 import {getUserFeed} from '../../utils/MyPageApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function MyPageScreen({navigation, setIsLoggedIn}) {
-  const [userId, setUserId] = useState(null);
+  const [myUserId, setMyUserId] = useState(null);
   const [feed, setFeed] = useState(null);
-  const [isFollowing, setIsFollowing] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  /** 🔹 내 userId + 피드 정보 로딩 */
+  /** 🔹 내 피드 조회 */
+  const fetchMyFeed = async () => {
+    try {
+      const id = await AsyncStorage.getItem('userId');
+      if (!id) return;
+
+      setMyUserId(id);
+      const feedData = await getUserFeed(id);
+      setFeed(feedData);
+    } catch (e) {
+      console.log('마이페이지 조회 실패:', e);
+    }
+  };
+
+  /** 🔹 최초 진입 */
   useEffect(() => {
-    const load = async () => {
-      try {
-        const id = await AsyncStorage.getItem('userId');
-        console.log('🔥 MyPage userId:', id);
-        setUserId(id);
-
-        if (id) {
-          const feedData = await getUserFeed(id);
-          setFeed(feedData);
-        }
-      } catch (e) {
-        console.log('MyPage feed 조회 실패:', e);
-      }
-    };
-
-    load();
+    fetchMyFeed();
   }, []);
+
+  /** 🔹 FollowScreen 다녀오면 자동 갱신 */
+  useFocusEffect(
+    useCallback(() => {
+      fetchMyFeed();
+    }, []),
+  );
 
   /** 🔹 로그아웃 */
   const handleLogout = async () => {
@@ -55,15 +63,21 @@ function MyPageScreen({navigation, setIsLoggedIn}) {
           postCount={feed.totalCount}
           followerCount={feed.totalFollower}
           followingCount={feed.totalFollowing}
-          isFollowing={isFollowing}
-          onToggleFollow={() => setIsFollowing(prev => !prev)}
+          onLogout={handleLogout}
           onPressFollower={() =>
-            navigation.navigate('Follow', {mode: 'follower'})
+            navigation.navigate('Follow', {
+              nickname: feed.userNickname,
+              type: 'follower',
+              targetUserId: myUserId,
+            })
           }
           onPressFollowing={() =>
-            navigation.navigate('Follow', {mode: 'following'})
+            navigation.navigate('Follow', {
+              nickname: feed.userNickname,
+              type: 'following',
+              targetUserId: myUserId,
+            })
           }
-          onLogout={handleLogout}
         />
       )}
 
@@ -75,9 +89,9 @@ function MyPageScreen({navigation, setIsLoggedIn}) {
       />
 
       {/* ⭐ 내 게시글 */}
-      {activeIndex === 0 && userId && (
+      {activeIndex === 0 && myUserId && (
         <MyPostMediaList
-          userId={userId}
+          userId={myUserId}
           onPressItem={(item, type) => {
             if (type === 'movie') {
               navigation.navigate('Movie', {
@@ -87,7 +101,9 @@ function MyPageScreen({navigation, setIsLoggedIn}) {
                   type: 'post',
                 },
               });
-            } else if (type === 'music') {
+            }
+
+            if (type === 'music') {
               navigation.navigate('Music', {
                 screen: 'MusicDetail',
                 params: {
@@ -100,12 +116,11 @@ function MyPageScreen({navigation, setIsLoggedIn}) {
         />
       )}
 
-      {activeIndex === 1 && userId && (
+      {/* ⭐ 즐겨찾기 */}
+      {activeIndex === 1 && myUserId && (
         <FavoriteMediaList
-          userId={userId} // ⭐ 이게 핵심
+          userId={myUserId}
           onPressItem={(item, type) => {
-            console.log('즐겨찾기 클릭:', item, type);
-
             if (type === 'movie') {
               navigation.navigate('Movie', {
                 screen: 'MovieDetail',

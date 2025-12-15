@@ -147,16 +147,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  /** ⭐ FavoriteMediaList와 동일하게 만든 gridWrapper */
   gridWrapper: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 14,
+    paddingHorizontal: 5,
     paddingBottom: 50,
-    marginLeft: 30, // 핵심!!
+    marginLeft: 15,
   },
 
-  /** 카드 스타일도 동일하게 유지해야 layout이 정확히 맞음 */
   card: {
     marginBottom: 22,
     marginRight: 16,

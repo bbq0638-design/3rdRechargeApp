@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
   },
 
   chipText: {
-    fontSize: 12,
+    fontSize: 9,
     color: '#333',
     marginLeft: 4,
   },

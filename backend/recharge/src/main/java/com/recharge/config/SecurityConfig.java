@@ -43,7 +43,9 @@ public class SecurityConfig {
                                 "/api/movie/**",
                                 "/api/moviepost/**",
                                 "/api/music/**",
-                                "/api/userfeed/**"
+                                "/api/userfeed/**",
+                                "/api/bookmark/**",
+                                "/api/follow/**"
                         ).permitAll()
 
                         .anyRequest().authenticated()

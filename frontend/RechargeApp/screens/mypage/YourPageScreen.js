@@ -1,38 +1,95 @@
-import React, {useState, useEffect} from 'react';
+// screens/mypage/YourPageScreen.js
+import React, {useState, useEffect, useCallback} from 'react';
 import {ScrollView} from 'react-native';
+import {useFocusEffect} from '@react-navigation/native';
+
 import ProfileHeader from '../../components/mypage/contents/ProfileHeader';
 import MyPageTab from '../../components/mypage/buttontabs/MyPageTab';
 import MyPostMediaList from '../../components/mypage/contents/MyPostMediaList';
 import FavoriteMediaList from '../../components/mypage/contents/FavoriteMediaList';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import {getUserFeed} from '../../utils/MyPageApi';
+import {followUser, unfollowUser, checkFollow} from '../../utils/FollowApi';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function YourPageScreen({navigation, route}) {
-  const {targetUserId, targetUserNickname} = route.params;
+  const {targetUserId, targetUserNickname} = route.params ?? {};
 
   const [feed, setFeed] = useState(null);
-  const [isFollowing, setIsFollowing] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [loggedInUserId, setLoggedInUserId] = useState(null);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [myUserId, setMyUserId] = useState(null);
 
-  /** 🔹 상대방 userId 기준 피드 로딩 */
+  /** 🔹 내 페이지 여부 */
+  const isMine = myUserId === targetUserId;
+
+  /** ---------------------------------
+   * 🔹 로그인 유저 ID + 팔로우 상태 초기화
+   * --------------------------------- */
   useEffect(() => {
-    const load = async () => {
+    const init = async () => {
       try {
         const loginId = await AsyncStorage.getItem('userId');
-        setLoggedInUserId(loginId);
+        setMyUserId(loginId);
 
-        if (!targetUserId) return;
-
-        const feedData = await getUserFeed(targetUserId);
-        setFeed(feedData);
+        if (loginId && targetUserId) {
+          const following = await checkFollow(loginId, targetUserId);
+          setIsFollowing(following);
+        }
       } catch (e) {
-        console.log('YourPage feed 조회 실패:', e);
+        console.log('YourPage 초기화 실패:', e);
       }
     };
 
-    load();
+    init();
   }, [targetUserId]);
+
+  /** ---------------------------------
+   * 🔹 상대방 피드 조회
+   * --------------------------------- */
+  const fetchFeed = async () => {
+    if (!targetUserId) return;
+
+    try {
+      const feedData = await getUserFeed(targetUserId);
+      setFeed(feedData);
+    } catch (e) {
+      console.log('YourPage feed 조회 실패:', e);
+    }
+  };
+
+  useEffect(() => {
+    fetchFeed();
+  }, [targetUserId]);
+
+  /** 🔥 FollowScreen 다녀오면 자동 갱신 */
+  useFocusEffect(
+    useCallback(() => {
+      fetchFeed();
+    }, [targetUserId]),
+  );
+
+  /** ---------------------------------
+   * 🔹 팔로우 / 언팔로우
+   * --------------------------------- */
+  const handleToggleFollow = async () => {
+    if (!myUserId || !targetUserId) return;
+
+    try {
+      if (isFollowing) {
+        await unfollowUser(myUserId, targetUserId);
+      } else {
+        await followUser(myUserId, targetUserId);
+      }
+
+      setIsFollowing(prev => !prev);
+
+      // ⭐ 서버 기준으로 다시 동기화
+      await fetchFeed();
+    } catch (e) {
+      console.log('팔로우 토글 실패:', e);
+    }
+  };
 
   return (
     <ScrollView
@@ -42,12 +99,26 @@ function YourPageScreen({navigation, route}) {
       {feed && (
         <ProfileHeader
           nickname={targetUserNickname ?? feed.userNickname}
-          isMine={false} // 🔥 내 페이지 아님
+          isMine={isMine}
           postCount={feed.totalCount}
           followerCount={feed.totalFollower}
           followingCount={feed.totalFollowing}
           isFollowing={isFollowing}
-          onToggleFollow={() => setIsFollowing(prev => !prev)}
+          onToggleFollow={handleToggleFollow}
+          onPressFollower={() =>
+            navigation.navigate('Follow', {
+              type: 'follower',
+              nickname: targetUserNickname ?? feed.userNickname,
+              targetUserId,
+            })
+          }
+          onPressFollowing={() =>
+            navigation.navigate('Follow', {
+              type: 'following',
+              nickname: targetUserNickname ?? feed.userNickname,
+              targetUserId,
+            })
+          }
         />
       )}
 
@@ -58,7 +129,7 @@ function YourPageScreen({navigation, route}) {
         onTabChange={setActiveIndex}
       />
 
-      {/* ⭐ 상대 게시글 */}
+      {/* ⭐ 게시글 */}
       {activeIndex === 0 && targetUserId && (
         <MyPostMediaList
           userId={targetUserId}
@@ -67,7 +138,7 @@ function YourPageScreen({navigation, route}) {
               navigation.navigate('Movie', {
                 screen: 'MovieDetail',
                 params: {
-                  movieId: item.id, // ⭐ movieId 통일
+                  movieId: item.id,
                   type: 'post',
                 },
               });
@@ -84,14 +155,12 @@ function YourPageScreen({navigation, route}) {
         />
       )}
 
-      {/* ⭐ 상대 즐겨찾기 */}
-      {activeIndex === 1 && (
+      {/* ⭐ 즐겨찾기 */}
+      {activeIndex === 1 && targetUserId && (
         <FavoriteMediaList
           userId={targetUserId}
           hideFavorite
           onPressItem={(item, type) => {
-            console.log('상대 즐겨찾기 클릭:', item, type);
-
             if (type === 'movie') {
               navigation.navigate('Movie', {
                 screen: 'MovieDetail',
