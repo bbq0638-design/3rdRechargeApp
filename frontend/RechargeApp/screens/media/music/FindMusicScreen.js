@@ -7,7 +7,7 @@ import AiRecommendSection from '../../../components/media/cards/AiRecommendCard'
 import Button from '../../../components/common/Button';
 import GenreSelector from '../../../components/media/cards/GenreSelector';
 import MediaListSection from '../../../components/media/lists/MediaListsSection';
-import AiRecommendModal from '../../../components/media/contents/AiRecommendModal';
+import MusicAiRecommendModal from '../../../components/media/contents/MusicAiRecommendModal';
 import {
   fetchAllMusic,
   fetchAllMusicPosts,
@@ -83,9 +83,7 @@ function FindMusicScreen() {
         id: m.musicId,
         title: m.musicTitle,
         author: m.musicSinger,
-        image: m.musicImagePath
-          ? m.musicImagePath.replace(/\/\d+x\d+bb\.jpg/, '/200x200bb.jpg')
-          : null,
+        image: m.musicImagePath,
         categoryId: m.commonCategoryId,
         isFavorite: false,
       }));
@@ -125,16 +123,12 @@ function FindMusicScreen() {
       const data = await fetchAllMusicPosts();
 
       const posts = data.map(post => {
-        const highRes = post.firstImagePath
-          ? post.firstImagePath.replace(/\/\d+x\d+bb\.jpg/, '/200x200bb.jpg')
-          : null;
-
         return {
           id: post.musicPostId,
           postId: post.musicPostId,
           title: post.musicPostTitle,
           author: post.userNickname || post.userId,
-          image: highRes,
+          image: post.firstImagePath,
         };
       });
 
@@ -208,7 +202,7 @@ function FindMusicScreen() {
         </View>
       </ScrollView>
       {/* Ai 추천 모달 */}
-      <AiRecommendModal
+      <MusicAiRecommendModal
         visible={showAimodal}
         onClose={() => setShowAiModal(false)}
         contentType="musicChart"

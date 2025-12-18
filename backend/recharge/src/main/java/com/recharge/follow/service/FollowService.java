@@ -15,4 +15,6 @@ public interface FollowService {
     List<FollowVO> getFollowingList(String followerId);
 
     List<FollowVO> getFollowerList(String followingId);
+
+
 }

@@ -1,5 +1,6 @@
-import React, {useRef, useCallback, useState, useEffect} from 'react';
+import React, {useRef, useCallback, useState} from 'react';
 import {View, ScrollView, Dimensions, StyleSheet, Text} from 'react-native';
+import {useFocusEffect} from '@react-navigation/native';
 import MediaTab from '../buttontabs/MediaTab';
 import MediaCards from '../../media/cards/MediaCards';
 import {fetchUserMoviePosts} from '../../../utils/Movieapi';
@@ -15,41 +16,43 @@ export default function MyPostMediaList({userId, onPressItem}) {
   const [musicPosts, setMusicPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!userId) return;
+  useFocusEffect(
+    useCallback(() => {
+      if (!userId) return;
 
-    const load = async () => {
-      try {
-        setLoading(true);
+      const load = async () => {
+        try {
+          setLoading(true);
 
-        const movieData = await fetchUserMoviePosts(userId);
-        const musicData = await fetchUserMusicPosts(userId);
-        setMoviePosts(
-          movieData.map(item => ({
-            id: item.moviePostId,
-            title: item.moviePostTitle,
-            author: item.userNickname,
-            image: item.moviePoster,
-          })),
-        );
+          const movieData = await fetchUserMoviePosts(userId);
+          const musicData = await fetchUserMusicPosts(userId);
+          setMoviePosts(
+            movieData.map(item => ({
+              id: item.moviePostId,
+              title: item.moviePostTitle,
+              author: item.userNickname,
+              image: item.moviePoster,
+            })),
+          );
 
-        setMusicPosts(
-          musicData.map(item => ({
-            id: item.musicPostId,
-            title: item.musicPostTitle,
-            author: item.userNickname,
-            image: item.firstImagePath,
-          })),
-        );
-      } catch (e) {
-        console.log('마이페이지 게시글 로드 실패:', e);
-      } finally {
-        setLoading(false);
-      }
-    };
+          setMusicPosts(
+            musicData.map(item => ({
+              id: item.musicPostId,
+              title: item.musicPostTitle,
+              author: item.userNickname,
+              image: item.firstImagePath,
+            })),
+          );
+        } catch (e) {
+          console.log('마이페이지 게시글 로드 실패:', e);
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    load();
-  }, [userId]);
+      load();
+    }, [userId]),
+  );
 
   /** 🔹 탭 클릭 → 슬라이드 이동 */
   const handleTabPress = useCallback(

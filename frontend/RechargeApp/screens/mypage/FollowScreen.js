@@ -1,6 +1,6 @@
 import React, {useState, useRef, useEffect} from 'react';
 import {View, Text, StyleSheet, ScrollView, Dimensions} from 'react-native';
-import {useRoute} from '@react-navigation/native';
+import {useRoute, useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import MyPageTab from '../../components/mypage/buttontabs/MyPageTab';
@@ -17,6 +17,7 @@ const {width} = Dimensions.get('window');
 
 export default function FollowScreen() {
   const scrollRef = useRef(null);
+  const navigation = useNavigation();
 
   const route = useRoute();
   const {
@@ -103,6 +104,22 @@ export default function FollowScreen() {
     setActiveIndex(page);
   };
 
+  const handlePressProfile = (userId, userNickname) => {
+    if (!userId) return;
+
+    // ✅ 내 프로필이면 마이페이지로
+    if (String(userId) === String(myUserId)) {
+      navigation.navigate('MyPage', {screen: 'MyPageScreen'});
+      return;
+    }
+
+    // ✅ 상대면 유어페이지로
+    navigation.navigate('YourPageScreen', {
+      targetUserId: userId,
+      targetUserNickname: userNickname,
+    });
+  };
+
   return (
     <View style={{flex: 1, backgroundColor: '#fff'}}>
       {/* 상단 제목 */}
@@ -132,6 +149,7 @@ export default function FollowScreen() {
             mode="following"
             myUserId={myUserId}
             onPressUnfollow={handleUnfollow}
+            onPressProfile={handlePressProfile}
           />
         </View>
 
@@ -143,6 +161,7 @@ export default function FollowScreen() {
             myUserId={myUserId}
             onPressFollow={handleFollow}
             onPressUnfollow={handleUnfollow}
+            onPressProfile={handlePressProfile}
           />
         </View>
       </ScrollView>

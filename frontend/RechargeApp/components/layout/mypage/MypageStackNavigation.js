@@ -15,12 +15,12 @@ export default function MyPageStackNavigation({setIsLoggedIn}) {
         options={{header: props => <Header {...props} />}}>
         {props => <MyPageScreen {...props} setIsLoggedIn={setIsLoggedIn} />}
       </Stack.Screen>
-      {/* 
+
       <Stack.Screen
         name="YourPageScreen"
         component={YourPageScreen}
         options={{header: props => <Header {...props} />}}
-      /> */}
+      />
 
       <Stack.Screen
         name="Follow"

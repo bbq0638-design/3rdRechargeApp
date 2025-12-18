@@ -5,6 +5,7 @@ import com.recharge.bookmark.vo.BookmarkVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.HashMap;
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.Map;
 public class BookmarkServiceImpl implements BookmarkService {
 
     private final BookmarkDAO bookmarkDAO;
+    private final WebClient tmdbWebClient;
 
     /** ⭐ 토글 */
     @Override
@@ -62,6 +64,40 @@ public class BookmarkServiceImpl implements BookmarkService {
     /** ⭐ 유저 전체 북마크 */
     @Override
     public List<BookmarkVO> getUserBookmarks(String userId) {
-        return bookmarkDAO.selectUserBookmarks(userId);
+
+        List<BookmarkVO> bookmarks = bookmarkDAO.selectUserBookmarks(userId);
+
+        for (BookmarkVO bm : bookmarks) {
+
+            // 🎬 movie 타입이고, JOIN 결과가 비어있을 때만
+            if ("movie".equals(bm.getBookmarkTargetType())
+                    && (bm.getTitle() == null || bm.getImage() == null)) {
+
+                try {
+                    Map<String, Object> detail = tmdbWebClient.get()
+                            .uri("/movie/{id}", bm.getBookmarkTargetId())
+                            .retrieve()
+                            .bodyToMono(Map.class)
+                            .block();
+
+                    if (detail != null) {
+                        bm.setTitle((String) detail.get("title"));
+
+                        Object posterPath = detail.get("poster_path");
+                        if (posterPath != null) {
+                            bm.setImage("https://image.tmdb.org/t/p/w500" + posterPath);
+                        }
+                    }
+
+                } catch (Exception e) {
+                    // ❗ TMDB 실패해도 전체 즐겨찾기 조회가 깨지면 안 됨
+                    // 로그만 남기고 패스
+                    System.out.println("TMDB 보강 실패 movieId="
+                            + bm.getBookmarkTargetId());
+                }
+            }
+        }
+
+        return bookmarks;
     }
 }

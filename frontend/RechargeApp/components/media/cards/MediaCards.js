@@ -2,7 +2,7 @@ import React from 'react';
 import {View, Text, Image, StyleSheet, TouchableOpacity} from 'react-native';
 
 import FavoriteButton from '../contents/FavoriteButton';
-import IconButton from '../../common/iconButton';
+import {musicImagePath} from '../../../utils/Musicapi';
 
 const MediaCards = ({
   title,
@@ -13,15 +13,24 @@ const MediaCards = ({
   isFavorite = false,
   showFavorite = true,
   onFavoriteToggle,
+  onPreviewPress,
   style,
 }) => {
+  const resolvedImage =
+    variant === 'music' || variant === 'musicChart'
+      ? musicImagePath(image, 300)
+      : image;
+
   if (variant === 'musicChart') {
     return (
       <View style={[styles.card, styles.chartCard, style]}>
         {/* 앨범아트 */}
-        <View style={styles.imageWrapper}>
-          <Image source={{uri: image}} style={styles.chartImage} />
-        </View>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={onPreviewPress}
+          style={styles.imageWrapper}>
+          <Image source={{uri: resolvedImage}} style={styles.chartImage} />
+        </TouchableOpacity>
 
         {/* 2열 구조 */}
         <View style={styles.rowWrapper}>
@@ -61,7 +70,7 @@ const MediaCards = ({
       ]}>
       {/* 포스터 */}
       <Image
-        source={{uri: image}}
+        source={{uri: resolvedImage}}
         style={variant === 'music' ? styles.musicImage : styles.movieImage}
       />
 

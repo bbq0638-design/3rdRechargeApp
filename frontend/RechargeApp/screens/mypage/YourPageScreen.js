@@ -1,4 +1,3 @@
-// screens/mypage/YourPageScreen.js
 import React, {useState, useEffect, useCallback} from 'react';
 import {ScrollView} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
@@ -75,18 +74,20 @@ function YourPageScreen({navigation, route}) {
   const handleToggleFollow = async () => {
     if (!myUserId || !targetUserId) return;
 
+    const prev = isFollowing;
+
     try {
-      if (isFollowing) {
-        await unfollowUser(myUserId, targetUserId);
-      } else {
-        await followUser(myUserId, targetUserId);
-      }
+      setIsFollowing(!prev); // optimistic
 
-      setIsFollowing(prev => !prev);
+      const res = prev
+        ? await unfollowUser(myUserId, targetUserId)
+        : await followUser(myUserId, targetUserId);
 
-      // ⭐ 서버 기준으로 다시 동기화
-      await fetchFeed();
+      console.log('follow/unfollow res:', res);
+      console.log('res.feed:', res?.feed);
+      if (res?.feed) setFeed(res.feed);
     } catch (e) {
+      setIsFollowing(prev); // rollback
       console.log('팔로우 토글 실패:', e);
     }
   };

@@ -1,5 +1,6 @@
 import React, {useRef, useCallback, useState, useEffect} from 'react';
 import {View, ScrollView, StyleSheet, Text, Dimensions} from 'react-native';
+import {useFocusEffect} from '@react-navigation/native';
 import MediaCards from '../../media/cards/MediaCards';
 import MediaTab from '../buttontabs/MediaTab';
 import {fetchUserBookmarks, toggleBookmark} from '../../../utils/BookmarkApi';
@@ -53,60 +54,65 @@ export default function FavoriteMediaList({
     }
   };
 
-  useEffect(() => {
-    if (!userId) return;
+  useFocusEffect(
+    useCallback(() => {
+      if (!userId) return;
 
-    const loadBookmarks = async () => {
-      try {
-        const bookmarks = await fetchUserBookmarks(userId);
+      const loadBookmarks = async () => {
+        try {
+          const bookmarks = await fetchUserBookmarks(userId);
 
-        // 🔹 movie / music
-        const movieItems = [];
-        const musicItems = [];
+          // 🔹 movie / music
+          const movieItems = [];
+          const musicItems = [];
 
-        bookmarks.forEach(bm => {
-          const normalized = normalizeBookmark(bm);
-          if (!normalized) return;
+          bookmarks.forEach(bm => {
+            const normalized = normalizeBookmark(bm);
+            if (!normalized) return;
 
-          if (normalized.type === 'movie') movieItems.push(normalized);
-          if (normalized.type === 'music' || normalized.type === 'musiclist') {
-            musicItems.push(normalized);
+            if (normalized.type === 'movie') movieItems.push(normalized);
+            if (
+              normalized.type === 'music' ||
+              normalized.type === 'musiclist'
+            ) {
+              musicItems.push(normalized);
+            }
+          });
+
+          // 🔹 moviepost
+          const moviePostIds = new Set(
+            bookmarks
+              .filter(b => b.bookmarkTargetType === 'moviepost')
+              .map(b => b.bookmarkTargetId),
+          );
+
+          if (moviePostIds.size > 0) {
+            const posts = await fetchMoviePostList();
+
+            const moviePostItems = posts
+              .filter(p => moviePostIds.has(p.moviePostId))
+              .map(p => ({
+                id: p.moviePostId,
+                title: p.moviePostTitle,
+                image: p.moviePoster, // ⭐ 이미 TMDB 적용됨
+                author: p.userNickname, // ⭐ 닉네임 포함
+                type: 'moviepost',
+              }));
+
+            setMovies([...movieItems, ...moviePostItems]);
+          } else {
+            setMovies(movieItems);
           }
-        });
 
-        // 🔹 moviepost
-        const moviePostIds = new Set(
-          bookmarks
-            .filter(b => b.bookmarkTargetType === 'moviepost')
-            .map(b => b.bookmarkTargetId),
-        );
-
-        if (moviePostIds.size > 0) {
-          const posts = await fetchMoviePostList();
-
-          const moviePostItems = posts
-            .filter(p => moviePostIds.has(p.moviePostId))
-            .map(p => ({
-              id: p.moviePostId,
-              title: p.moviePostTitle,
-              image: p.moviePoster, // ⭐ 이미 TMDB 적용됨
-              author: p.userNickname, // ⭐ 닉네임 포함
-              type: 'moviepost',
-            }));
-
-          setMovies([...movieItems, ...moviePostItems]);
-        } else {
-          setMovies(movieItems);
+          setMusic(musicItems);
+        } catch (e) {
+          console.log('즐겨찾기 불러오기 실패:', e);
         }
+      };
 
-        setMusic(musicItems);
-      } catch (e) {
-        console.log('즐겨찾기 불러오기 실패:', e);
-      }
-    };
-
-    loadBookmarks();
-  }, [userId]);
+      loadBookmarks();
+    }, [userId]),
+  );
 
   const handleTabPress = useCallback(tab => {
     setActiveTab(tab);

@@ -163,5 +163,15 @@
         ORDER BY DBMS_RANDOM.VALUE
     </select>
 
+    <select id="findCategoryByTmdbCode" resultType="map">
+        SELECT
+        COMMON_CATEGORY_ID,
+        COMMON_CATEGORY_NAME,
+        COMMON_CATEGORY_CODE
+        FROM TB_COMMON_CATEGORY
+        WHERE COMMON_CATEGORY_SYSTEM = #{system}
+        AND COMMON_CATEGORY_CODE = #{code}
+    </select>
+
 
 </mapper>

@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet, Pressable} from 'react-native';
 import Button from '../../common/Button';
 
 export default function ProfileList({
@@ -8,6 +8,7 @@ export default function ProfileList({
   myUserId,
   onPressFollow,
   onPressUnfollow,
+  onPressProfile,
 }) {
   return (
     <View style={styles.listWrapper}>
@@ -21,7 +22,11 @@ export default function ProfileList({
 
         return (
           <View key={targetUserId} style={styles.row}>
-            <Text style={styles.name}>{nickname}</Text>
+            <Pressable
+              style={{flex: 1}}
+              onPress={() => onPressProfile?.(targetUserId, nickname)}>
+              <Text style={styles.name}>{nickname}</Text>
+            </Pressable>
 
             {!isMe && mode === 'following' && (
               <Button

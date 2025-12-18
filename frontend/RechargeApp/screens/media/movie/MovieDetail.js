@@ -5,6 +5,7 @@ import CommentSection from '../../../components/common/CommentSection';
 import MovieInfo from '../../../components/media/contents/MovieInfo';
 import FavoriteButton from '../../../components/media/contents/FavoriteButton';
 import UserRecommendBox from '../../../components/media/contents/UserRecommendBox';
+import ReportModal from '../../../components/common/ReportModal';
 import {
   fetchMovieDetail,
   fetchMoviePostDetail,
@@ -15,6 +16,7 @@ import LoadingAnimation from '../../../components/common/LoadingAnimation';
 import MovieOtherPostsSection from '../../../components/media/lists/MovieOtherPostsSection';
 import MovieSimilarSection from '../../../components/media/lists/MovieSimilarSection';
 import {toggleBookmark, checkBookmark} from '../../../utils/BookmarkApi';
+import {submitReport} from '../../../utils/ReportApi';
 
 export default function MovieDetail({route}) {
   const {movieId, type} = route.params;
@@ -23,12 +25,12 @@ export default function MovieDetail({route}) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [loggedInUserId, setLoggedInUserId] = useState(null);
   const [showSimilar, setShowSimilar] = useState(false);
+  const [isReportModalVisible, setReportModalVisible] = useState(false);
   const scrollRef = useRef(null);
 
   const isUserPost = type === 'post';
-
-  const bookmarkTargetType = isUserPost ? 'moviepost' : 'movie';
-  const bookmarkTargetId = isUserPost ? movie?.moviePostId : movie?.movieId;
+  const isMine = movie?.userId === loggedInUserId;
+  const isAdmin = loggedInUserId === 'admin';
 
   // 이동 시 맨 위로
   useEffect(() => {
@@ -113,6 +115,48 @@ export default function MovieDetail({route}) {
     ]);
   };
 
+  // 신고 제출
+  const handleReportPress = () => {
+    if (!loggedInUserId) {
+      Alert.alert('알림', '로그인이 필요한 서비스입니다.');
+      return;
+    }
+
+    setReportModalVisible(true);
+  };
+
+  const handleReportSubmit = async reason => {
+    setReportModalVisible(false);
+
+    try {
+      const res = await submitReport({
+        reportTargetType: 'moviepost',
+        reportTargetId: movie.moviePostId,
+        userId: loggedInUserId,
+        reportTargetUserId: movie.userId,
+        reportReason: reason,
+      });
+
+      if (res.status === 'SUCCESS') {
+        Alert.alert('완료', '신고가 정상적으로 접수되었습니다.');
+      } else if (res.status === 'ALREADY_REPORTED') {
+        Alert.alert('알림', '이미 신고하신 게시글입니다.');
+      } else {
+        Alert.alert('실패', '신고에 실패했습니다.');
+      }
+    } catch (e) {
+      Alert.alert('오류', '통신 중 문제가 발생했습니다.');
+    }
+  };
+
+  if (!movie) {
+    return (
+      <View style={styles.loading}>
+        <LoadingAnimation size={140} />
+      </View>
+    );
+  }
+
   const handlePressNickname = async () => {
     if (!movie) return;
 
@@ -128,9 +172,6 @@ export default function MovieDetail({route}) {
     }
   };
 
-  const isMine = movie?.userId === loggedInUserId;
-  const isAdmin = loggedInUserId === 'admin';
-
   return (
     <ScrollView
       ref={ref => (scrollRef.current = ref)}
@@ -145,6 +186,7 @@ export default function MovieDetail({route}) {
         isAdmin={isAdmin}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onReport={handleReportPress}
       />
 
       {/* 즐겨찾기 */}
@@ -211,6 +253,12 @@ export default function MovieDetail({route}) {
           }
         />
       )}
+
+      <ReportModal
+        isVisible={isReportModalVisible}
+        onClose={() => setReportModalVisible(false)}
+        onSubmit={handleReportSubmit}
+      />
     </ScrollView>
   );
 }

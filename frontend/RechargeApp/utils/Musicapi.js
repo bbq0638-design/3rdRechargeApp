@@ -110,3 +110,9 @@ export const fetchTopConcerts = async () => {
     throw err.response?.data || '콘서트 조회 실패';
   }
 };
+
+// 앨범아트 해상도 증가
+export const musicImagePath = (url, size = 200) => {
+  if (!url) return null;
+  return url.replace(/\/\d+x\d+bb\.jpg/, `/${size}x${size}bb.jpg`);
+};

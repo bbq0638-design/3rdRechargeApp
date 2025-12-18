@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 import Modal from 'react-native-modal';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -14,14 +15,11 @@ import CustomTextInput from '../../common/TextInput';
 import MediaCards from '../cards/MediaCards';
 import SelectableButton from '../../common/SelectableButton';
 import LoadingAnimation from '../../common/LoadingAnimation';
+import {fetchAiMovieRecommend} from '../../../utils/Movieapi';
 
-function AiRecommendModal({
-  visible,
-  onClose,
-  contentType = 'movie',
-  onResultPress,
-}) {
-  const [mode, setMode] = useState('weather');
+function MovieAiRecommendModal({visible, onClose, onResultPress}) {
+  const contentType = 'movie';
+
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState([]);
@@ -34,50 +32,9 @@ function AiRecommendModal({
     }));
   };
 
-  const placeholder =
-    mode === 'weather'
-      ? `예) 맑은 날씨에 어울리는 ${
-          contentType === 'movie' ? '영화' : '음악'
-        } 추천해줘`
-      : `예) 기분 좋을 때 듣기 좋은 ${
-          contentType === 'movie' ? '영화' : '음악'
-        } 추천해줘`;
+  const placeholder = '예) 맑은 날씨에 어울리는 영화 추천해줘';
 
-  const mockMovie = [
-    {id: '1', title: 'Movie 1', img: 'https://placehold.co/185x278?text=M1'},
-    {id: '2', title: 'Movie 2', img: 'https://placehold.co/185x278?text=M2'},
-    {id: '3', title: 'Movie 3', img: 'https://placehold.co/185x278?text=M3'},
-    {id: '4', title: 'Movie 4', img: 'https://placehold.co/185x278?text=M4'},
-  ];
-
-  const mockMusic = [
-    {
-      id: 'A1',
-      title: 'Music A1',
-      artist: '가수',
-      img: 'https://placehold.co/185x278?text=S1',
-    },
-    {
-      id: 'A2',
-      title: 'Music A2',
-      artist: '가수',
-      img: 'https://placehold.co/185x278?text=S2',
-    },
-    {
-      id: 'A3',
-      title: 'Music A3',
-      artist: '가수',
-      img: 'https://placehold.co/185x278?text=S3',
-    },
-    {
-      id: 'A4',
-      title: 'Music A4',
-      artist: '가수',
-      img: 'https://placehold.co/185x278?text=S4',
-    },
-  ];
-
-  // 🔥 모달 닫힐 때 상태 초기화
+  /** 🔥 모달 닫힐 때 상태 초기화 */
   useEffect(() => {
     if (!visible) {
       setItems([]);
@@ -86,14 +43,27 @@ function AiRecommendModal({
     }
   }, [visible]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!query.trim()) return;
-    setLoading(true);
 
-    setTimeout(() => {
-      setItems(contentType === 'movie' ? mockMovie : mockMusic);
+    try {
+      setLoading(true);
+
+      const data = await fetchAiMovieRecommend(query);
+
+      const formatted = data.map(item => ({
+        id: item.movieId,
+        title: item.movieTitle,
+        image: item.moviePoster,
+      }));
+
+      setItems(formatted);
+    } catch (e) {
+      console.log('AI 추천 오류', e);
+      setItems([]);
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   return (
@@ -110,30 +80,10 @@ function AiRecommendModal({
       <View style={styles.modalContainer}>
         {/* 헤더 */}
         <View style={styles.header}>
-          <Text style={styles.title}>
-            AI {contentType === 'movie' ? '영화' : '음악'} 추천
-          </Text>
+          <Text style={styles.title}>AI 영화 추천</Text>
           <TouchableOpacity onPress={onClose}>
             <MaterialCommunityIcons name="close" size={24} color="#333" />
           </TouchableOpacity>
-        </View>
-
-        {/* 날씨/기분 선택 */}
-        <View style={styles.tabs}>
-          <SelectableButton
-            label="날씨"
-            selected={mode === 'weather'}
-            onPress={() => setMode('weather')}
-            icon={<MaterialCommunityIcons name="weather-sunny" />}
-            style={{marginRight: 10}}
-          />
-          <SelectableButton
-            label="기분"
-            selected={mode === 'mood'}
-            onPress={() => setMode('mood')}
-            icon={<MaterialCommunityIcons name="emoticon-happy-outline" />}
-            style={{marginRight: 10}}
-          />
         </View>
 
         {/* 입력창 */}
@@ -168,12 +118,11 @@ function AiRecommendModal({
                 <MediaCards
                   key={item.id}
                   title={item.title}
-                  author={item.artist}
-                  image={item.img}
-                  variant={contentType}
-                  style={{marginBottom: 10}}
+                  image={item.image}
+                  variant="movie"
                   isFavorite={!!favorites[item.id]}
                   onFavoriteToggle={() => toggleFavorite(item.id)}
+                  style={{marginLeft: 15, marginBottom: 22}}
                   onPress={() => {
                     onClose();
                     onResultPress?.(item, contentType);
@@ -193,7 +142,7 @@ function AiRecommendModal({
 const styles = StyleSheet.create({
   modalContainer: {
     width: '100%',
-    padding: 20,
+    padding: 10,
     paddingBottom: 40,
     backgroundColor: '#fff',
     borderTopLeftRadius: 20,
@@ -205,22 +154,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 15,
   },
 
-  title: {fontSize: 20, fontWeight: '700'},
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
 
-  tabs: {flexDirection: 'row', marginTop: 20},
+  tabs: {
+    flexDirection: 'row',
+    marginTop: 20,
+  },
 
-  results: {marginTop: 20, paddingBottom: 20},
+  results: {
+    marginTop: 20,
+    paddingBottom: 20,
+  },
 
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 16,
+    paddingBottom: 50,
   },
-
-  empty: {textAlign: 'center', color: '#777', fontSize: 15},
 });
 
-export default AiRecommendModal;
+export default MovieAiRecommendModal;

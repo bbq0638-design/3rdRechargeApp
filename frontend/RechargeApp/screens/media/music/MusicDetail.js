@@ -12,10 +12,12 @@ import MusicOtherPostsSection from '../../../components/media/lists/MusicOtherPo
 import MusicPlaylistItem from '../../../components/media/contents/MusicPlaylistItem';
 import UserPostActionBar from '../../../components/common/UserPostActionBar';
 import MusicPreview from '../../../components/media/contents/MusicPreview';
+import ReportModal from '../../../components/common/ReportModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {toggleBookmark, fetchUserBookmarks} from '../../../utils/BookmarkApi';
 
 import {fetchMusicPostDetail, deleteMusicPost} from '../../../utils/Musicapi';
+import {submitReport} from '../../../utils/ReportApi';
 
 function MusicDetail() {
   const navigation = useNavigation();
@@ -28,8 +30,9 @@ function MusicDetail() {
   const [loading, setLoading] = useState(true);
   const [previewTrack, setPreviewTrack] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(null);
+  const [isReportModalVisible, setReportModalVisible] = useState(false);
 
-  const MINI_PLAYER_HEIGHT = 85 + 20;
+  const MINI_PLAYER_HEIGHT = 105;
 
   const isMine = post?.userId === loggedInUserId;
   const isAdmin = loggedInUserId === 'admin';
@@ -176,6 +179,38 @@ function MusicDetail() {
     setPreviewTrack(playlist[nextIndex]);
   };
 
+  const handleReportPress = () => {
+    if (!loggedInUserId) {
+      Alert.alert('알림', '로그인이 필요한 서비스입니다.');
+      return;
+    }
+    setReportModalVisible(true);
+  };
+
+  const handleReportSubmit = async reason => {
+    setReportModalVisible(false);
+
+    try {
+      const res = await submitReport({
+        reportTargetType: 'musicpost',
+        reportTargetId: post.musicPostId,
+        userId: loggedInUserId,
+        reportTargetUserId: post.userId,
+        reportReason: reason,
+      });
+
+      if (res.status === 'SUCCESS') {
+        Alert.alert('완료', '신고가 정상적으로 접수되었습니다.');
+      } else if (res.status === 'ALREADY_REPORTED') {
+        Alert.alert('알림', '이미 신고하신 게시글입니다.');
+      } else {
+        Alert.alert('실패', '신고에 실패했습니다.');
+      }
+    } catch {
+      Alert.alert('오류', '통신 중 문제가 발생했습니다.');
+    }
+  };
+
   const handlePressNickname = async () => {
     if (!post) return;
 
@@ -210,7 +245,7 @@ function MusicDetail() {
               isPost={true}
               onEdit={handleEdit}
               onDelete={handleDelete}
-              onReport={() => console.log('신고 클릭')}
+              onReport={handleReportPress}
             />
           </View>
 
@@ -258,6 +293,11 @@ function MusicDetail() {
           onNext={playNext}
         />
       )}
+      <ReportModal
+        isVisible={isReportModalVisible}
+        onClose={() => setReportModalVisible(false)}
+        onSubmit={handleReportSubmit}
+      />
     </>
   );
 }
