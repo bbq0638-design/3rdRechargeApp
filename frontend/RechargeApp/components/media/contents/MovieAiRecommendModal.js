@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Keyboard,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import Modal from 'react-native-modal';
@@ -44,6 +45,7 @@ function MovieAiRecommendModal({visible, onClose, onResultPress}) {
   }, [visible]);
 
   const handleSubmit = async () => {
+    Keyboard.dismiss();
     if (!query.trim()) return;
 
     try {
